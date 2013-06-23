@@ -18,7 +18,7 @@ You can do this with easy_install and pip.
 Run
 ===
 
-Run this code with python3, the .bak file is built for python2
+Run this code with python3, the media-scraper-p2.py file is built for python2
 - currently only tested on Linux
 
 License
