@@ -18,9 +18,8 @@ You can do this with easy_install and pip.
 Run
 ===
 
-Run this code with python2!
-
-This code is not compatible with python3 (mainly because I had issues with the cookielib and didn't bother to waste too much time dealing with them).
+Run this code with python3, the .bak file is built for python2
+- currently only tested on Linux
 
 License
 =======

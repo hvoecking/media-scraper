@@ -13,7 +13,7 @@
 #  
 
 
-import urllib, urllib2, re, os, sys, time, cookielib
+import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, re, os, sys, time, http.cookiejar
 from datetime import date
 from bs4 import BeautifulSoup
 
@@ -114,12 +114,12 @@ playlist.write("#EXTM3U\n")
 # Saves the html (as string) to a file in dir
 def save_as(html, dir, name):
 	f = open(dir + name, "w")
-	f.write(html)
+	f.write(str(html))
 	f.close()
 	
 # Opens a link and returns it's page as a BeautifulSoup object
 def cook_soup(opener, link, dir=None, name=None, data=None):
-	request = urllib2.Request(link, data, headers)
+	request = urllib.request.Request(link, data, headers)
 	response = opener.open(request)
 
 	html = response.read()
@@ -138,8 +138,8 @@ def main():
 	media_files = {}
 
 	# Prepare the opener
-	cj = cookielib.CookieJar()
-	opener = urllib2.build_opener(urllib2.HTTPCookieProcessor(cj))
+	cj = http.cookiejar.CookieJar()
+	opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
 	
 	soup = cook_soup(opener, host)
 
@@ -161,7 +161,7 @@ def main():
 	news = soup.find_all(attrs={"class" : 
 			re.compile(r"modClassic|modPremium|modB")})
 
-	print "Opening", len(news), "articles on", host, "|", today
+	print("Opening", len(news), "articles on", host, "|", today)
 	
 	# Now navigate through the document and extract the links to the 
 	# articles wich will be stored in "links"
@@ -182,9 +182,9 @@ def main():
 					links.append(link)
 					
 					
-	print
-	print bcolors.BOLD_SEQ + " audios | videos | Title" + bcolors.ENDC
-	print "--------|--------|---------------"
+	print()
+	print(bcolors.BOLD_SEQ + " audios | videos | Title" + bcolors.ENDC)
+	print("--------|--------|---------------")
 	
 	# Now look on each page if video or audio files are present
 	for link in links:
@@ -200,12 +200,12 @@ def main():
 		
 		title = soup.find("title").get_text().split(" | ")[0]
 		if len(audios) + len(videos) == 0:
-			print bcolors.FAIL + "   ~0~  |   ~0~  | ~" + title + \
-				bcolors.ENDC
+			print(bcolors.FAIL + "   ~0~  |   ~0~  | ~" + title + \
+				bcolors.ENDC)
 		else:
-			print "    " + str(len(audios)) + "   |    " + \
+			print("    " + str(len(audios)) + "   |    " + \
 				str(len(videos)) + "   | ", \
-				soup.find("title").get_text().split(" | ")[0]
+				soup.find("title").get_text().split(" | ")[0])
 		
 		# Insert the found media files into their corresponding arrays
 		
@@ -235,9 +235,9 @@ def main():
 	fetch_command = "sleep 1 && vlc \"" + playlist_file + \
 		"\" >> /dev/null 2>&1 >> /dev/null & "
 	
-	print "--------|--------|---------------"
-	print "    " + str(len(audio_files)) + "   |   " + \
-		str(len(video_files)) + "   | will be downloaded..."
+	print("--------|--------|---------------")
+	print("    " + str(len(audio_files)) + "   |   " + \
+		str(len(video_files)) + "   | will be downloaded...")
 	
 	# Add for all audio and video files that are not present in the 
 	# filesystem an entry in the plylist and a call to wget, so it will 
@@ -258,19 +258,19 @@ def main():
 
 
 if __name__ == '__main__':
-	print bcolors.BOLD_SEQ + "Media Scraper for tagesschau.de" + \
-		bcolors.ENDC
-	print " (c) by" + bcolors.BOLD_SEQ + " Heye Voecking " + \
+	print(bcolors.BOLD_SEQ + "Media Scraper for tagesschau.de" + \
+		bcolors.ENDC)
+	print(" (c) by" + bcolors.BOLD_SEQ + " Heye Voecking " + \
 		bcolors.ENDC + bcolors.OKBLUE + \
-		"<heye.voecking+mediascraper[at]gmail[dot]com>" + bcolors.ENDC
-	print bcolors.FAIL + \
+		"<heye.voecking+mediascraper[at]gmail[dot]com>" + bcolors.ENDC)
+	print(bcolors.FAIL + \
 		"This program is distributed WITHOUT ANY WARRANTY!" + \
-		bcolors.ENDC
-	print
+		bcolors.ENDC)
+	print()
 	
-	print "Audio quality: ", bcolors.OKBLUE, audio_quality, bcolors.ENDC
-	print "Video quality: ", bcolors.OKBLUE, video_quality, bcolors.ENDC
-	print "Downloading to:", bcolors.OKBLUE, location, \
-		bcolors.ENDC
-	print
+	print("Audio quality: ", bcolors.OKBLUE, audio_quality, bcolors.ENDC)
+	print("Video quality: ", bcolors.OKBLUE, video_quality, bcolors.ENDC)
+	print("Downloading to:", bcolors.OKBLUE, location, \
+		bcolors.ENDC)
+	print()
 	main()
