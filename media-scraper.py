@@ -60,7 +60,7 @@ video_qualities = {
 	"MOBIL" : "podm.h264.mp4",
 	'MITTEL4' : "webm.h264.mp4",
 	'MITTEL' : "webm.webm",
-	'GROẞ' : 'webl.h264.mp4'}
+	'HOCH' : 'webl.h264.mp4'}
 
 video_quality = "MITTEL"	
 
@@ -232,7 +232,7 @@ def main():
 	# the file download can already start in the background. The output
 	# vlc is sent to /dev/null so it doesn't interfere with the wget 
 	# output
-	wget_command = "sleep 1 && vlc \"" + playlist_file + \
+	fetch_command = "sleep 1 && vlc \"" + playlist_file + \
 		"\" >> /dev/null 2>&1 >> /dev/null & "
 	
 	print "--------|--------|---------------"
@@ -247,13 +247,12 @@ def main():
 			file = e[1].split("/")[-1]
 			if touch(e[0] + file):
 				playlist.write(e[0] + file + "\n")
-				wget_command += "cd " + e[0] + "; wget " + e[1] + \
-					" -O " + file + "; "
-
+				fetch_command += "cd " + e[0] + " && curl " + e[1] + \
+					" -o " + file + " 2>&1 | grep -v Total && "
 
 	playlist.close()
 	
-	os.system(wget_command)
+	os.system(fetch_command[:-3])
 	
 	return
 
@@ -269,9 +268,9 @@ if __name__ == '__main__':
 		bcolors.ENDC
 	print
 	
-	print "Downloading to:", bcolors.OKBLUE, location, \
-		bcolors.ENDC
 	print "Audio quality: ", bcolors.OKBLUE, audio_quality, bcolors.ENDC
 	print "Video quality: ", bcolors.OKBLUE, video_quality, bcolors.ENDC
+	print "Downloading to:", bcolors.OKBLUE, location, \
+		bcolors.ENDC
 	print
 	main()
