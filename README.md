@@ -43,12 +43,12 @@ TODO
 - Set track name in playlist as website title
 - Download to same directory per topic (cut off numbers at the end)
 - Command line options / settings file
--- Help
--- Audio/Video quality
--- Directory for download
--- Media Player
--- Download manager
--- Max age of files
+- - Help
+- - Audio/Video quality
+- - Directory for download
+- - Media Player
+- - Download manager
+- - Max age of files
 - Save in default downloads folder
 - Sort playlist by article > time
 - Render the webpage and set it as covor image for audio files
