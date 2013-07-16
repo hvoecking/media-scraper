@@ -1,7 +1,7 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  wg-searcher.py
+#  media-scraper.py
 #  
 #  Copyright 2013 Heye Vöcking <heye.voecking at gmail.com>
 #    
@@ -17,9 +17,9 @@ import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error,
 import argparse
 from datetime import date
 from bs4 import BeautifulSoup
+import const as c
 
-# From http://stackoverflow.com/questions/287871/print-in-terminal-
-# 												with-colors-using-python
+# From http://stackoverflow.com/questions/287871/print-in-terminal-with-colors-using-python
 class bcolors:
     BOLD_SEQ = "\033[1m"
     HEADER = '\033[95m'
@@ -59,17 +59,11 @@ http://download.media.tagesschau.de/
 video_prefix = "TV"
 
 video_qualities = {
-	"MOBIL" : "podm.h264.mp4",
-	'MITTEL4' : "webm.h264.mp4",
-	'MITTEL' : "webm.webm",
-	'HOCH' : 'webl.h264.mp4'}
+	"mobil" : "podm.h264.mp4",
+	'mittel' : "webm.h264.mp4",
+	'webm' : "webm.webm",
+	'hoch' : 'webl.h264.mp4'}
 
-video_quality = "MITTEL"	
-
-video_file_pattern = re.compile(r"http://download\.media\." + 
-	"tagesschau\.de/video/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
-	(video_prefix, video_qualities[video_quality]))
-		
 	
 """
 Style of audio links:
@@ -81,20 +75,11 @@ http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.ogg
 audio_prefix = "AU"
 
 audio_qualities = {
-	"MP3" : "mp3",
-	"OGG" : "ogg"}
-
-audio_quality = "MP3"
-
-audio_file_pattern = re.compile(r"http://media\.tagesschau\.de/" + \
-	"audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
-	(audio_prefix, audio_qualities[audio_quality]))
-	
+	"mp3" : "mp3",
+	"ogg" : "ogg"}
 
 url_pattern = re.compile(r"\d*\.html")
 
-	
-today = str(date.today())
 
 # Create a directory if it doesn't exist
 def mkdir(directory):
@@ -102,12 +87,6 @@ def mkdir(directory):
 		os.makedirs(directory)
 		
 
-# Setup directory and playlist
-location = "/tmp/tagesschau/"
-mkdir(location)
-playlist_file = location + today + ".m3u"
-playlist = open(playlist_file, "w")
-playlist.write("#EXTM3U\n")
 
 # Saves the html (as string) to a file in dir
 def save_as(html, dir, name):
@@ -127,7 +106,31 @@ def cook_soup(opener, link, dir=None, name=None, data=None):
 	return BeautifulSoup(html)
 	
 
-def main():	
+def main(audio_quality, video_quality, location, age, player,
+		 playlist, tool):	
+	
+	
+	video_file_pattern = re.compile(r"http://download\.media\." + 
+		"tagesschau\.de/video/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
+		(video_prefix, video_qualities[video_quality]))
+	
+	audio_file_pattern = re.compile(r"http://media\.tagesschau\.de/" + \
+		"audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
+		(audio_prefix, audio_qualities[audio_quality]))
+	
+	print("Audio quality: ", bcolors.OKBLUE, audio_quality, bcolors.ENDC)
+	print("Video quality: ", bcolors.OKBLUE, video_quality, bcolors.ENDC)
+	print("Downloading to:", bcolors.OKBLUE, location, \
+		bcolors.ENDC)
+	print()
+	
+	today = str(date.today())
+	# Setup directory and playlist
+	mkdir(location)
+	playlist_file = location + today + ".m3u"
+	playlist = open(playlist_file, "w")
+	playlist.write("#EXTM3U\n")
+	
 	# Will hold all media urls with their attributes
 	medias = {}
 	
@@ -218,11 +221,11 @@ def main():
 			key = general_topic + file[3:]
 			if key not in medias:
 				count[prefix] += 1
-				date = ("%s.%s.%s %s:%s" %
+				time = ("%s.%s.%s %s:%s" %
 					    (file[9:11], file[7:9], file[3:7], file[12:14], 
 					     file[14:16]))
 				medias[key] = (dir, file, url, 
-							   "%s: %s (%s)" % (date, title, prefix))
+							   "%s: %s (%s)" % (time, title, prefix))
 	
 	
 	# We will prepare a command (that will be executed via os.system)
@@ -264,47 +267,71 @@ def main():
 
 
 if __name__ == '__main__':
-	print(bcolors.BOLD_SEQ + "Media Scraper for tagesschau.de" + \
+	print(bcolors.BOLD_SEQ + "Media Scraper for tagesschau.de" +
 		bcolors.ENDC)
-	print(" (c) by" + bcolors.BOLD_SEQ + " Heye Voecking " + \
+	print(" (c) by" + bcolors.BOLD_SEQ + " Heye Voecking " +
 		bcolors.ENDC + bcolors.OKBLUE + \
 		"<heye.voecking+mediascraper[at]gmail[dot]com>" + bcolors.ENDC)
 	print(bcolors.FAIL + \
-		"This program is distributed WITHOUT ANY WARRANTY!" + \
+		"This program is distributed WITHOUT ANY WARRANTY!" +
 		bcolors.ENDC)
 	print()
 	
 	
 	# Arguments
-	parser = argparse.ArgumentParser(description="Optional arguments are")
-#-- Media Player
-#-- Download manager
-#-- Max age of files
-	parser.add_argument("-a, --audio-quality", 
-						default=audio_quality,
+	parser = argparse.ArgumentParser(description="Optional arguments")
+
+	parser.add_argument("-a, --audio-quality",
 						choices=audio_qualities.keys(),
+						default='mp3',
+						dest='audio',
 					    help="There are %d different audio qualities "
-							 "available for download" % 
-							 len(audio_qualities),
-						dest='audio-quality')
-	parser.add_argument('-v, --video-quality', 
-						default=video_quality,
+							 "available for download." % 
+							 len(audio_qualities))
+							 
+	parser.add_argument("-v, --video-quality",
 						choices=video_qualities.keys(),
+						default='webm',
+						dest='video',
 					    help="There are %d different video qualities "
-							 "available for download %s" % 
+							 "available for download: %s" % 
 							 (len(video_qualities), 
-							  str(video_qualities)),
-						dest='video-quality')
-	
-	parser.add_argument('-d, --download-directory',
-						dest='download-directory',
+							  str(video_qualities)))
+	location = "/tmp/tagesschau"
+	parser.add_argument("-d, --download-directory",
+						dest='dir',
 						default=location,
-						help="The directory to which the files should"
-							 "should be downloaded")
-	parser.parse_args()
-	print("Audio quality: ", bcolors.OKBLUE, audio_quality, bcolors.ENDC)
-	print("Video quality: ", bcolors.OKBLUE, video_quality, bcolors.ENDC)
-	print("Downloading to:", bcolors.OKBLUE, location, \
-		bcolors.ENDC)
-	print()
-	main()
+						help="The directory to which the files should "
+							 "be downloaded.")
+							 
+	parser.add_argument("-f, --file-age",
+						dest='age',
+						default=0,
+						help="The maximum number of days since the "
+							 "file has been published. Use 0 for "
+							 "unlimited.")
+							 
+	parser.add_argument("-p, --player",
+						dest='player',
+						default="vlc",
+						help="The media player which will be called "
+							 "to open the generated playlist.")
+							 
+	parser.add_argument("-l, --playlist-format",
+						dest='playlist',
+						default="m3u",
+						choices={"m3u"},
+						help="The format of the playlist, currently "
+							 "only m3u is supported")
+							 
+	parser.add_argument("-t, --download-tool",
+						dest='tool',
+						default="curl",
+						help="The command line tool used to download "
+							 "the media files. Only tested with curl "
+							 "and wget so far.")
+							 
+	args = parser.parse_args()
+	
+	main(args.audio, args.video, args.dir, args.age, args.player, 
+		 args.playlist, args.tool)
