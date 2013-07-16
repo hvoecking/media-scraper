@@ -37,7 +37,7 @@ So if you do, please contact me first before publishing your code!
 
 TODO
 ====
-- Fix formatting of last row on downloading
+x Fix formatting of last row on downloading
 v Do not touch files anymore
 v Do not split up in subfolders by date anymore to avoid downloading same files multiple times
 v Set track name in playlist as website title
@@ -45,13 +45,13 @@ v Download to same directory per topic (cut off numbers at the end)
 - Command line options / settings file
 -- Help
 -- Audio/Video quality
--- Directory for download
+-- Directory for download (default: Save in downloads folder)
 -- Media Player
 -- Download manager
 -- Max age of files
-- Save in default downloads folder
-- Sort playlist by article > time
+x Sort playlist by general article topic > time
 - Format code
+-- Consistently sort video stuff before audio stuff
 -- Quote style according to http://stackoverflow.com/questions/56011/single-quotes-vs-double-quotes-in-python
 -- Code style according to http://google-styleguide.googlecode.com/svn/trunk/pyguide.html#Semicolons
 - Render the webpage and set it as covor image for audio files

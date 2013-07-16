@@ -14,6 +14,7 @@
 
 
 import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, re, os, sys, time, http.cookiejar
+import argparse
 from datetime import date
 from bs4 import BeautifulSoup
 
@@ -42,7 +43,6 @@ Gecko/20100401 Firefox/4.0 (.NET CLR 3.5.30729)'
 headers = {'User-Agent': user_agent}
 host = 'http://www.tagesschau.de'
 
-
 """
 Style of video links:
 
@@ -56,6 +56,8 @@ http://download.media.tagesschau.de/
 	video/2013/0526/TV-20130526-2257-3401.webl.h264.mp4
 """
 
+video_prefix = "TV"
+
 video_qualities = {
 	"MOBIL" : "podm.h264.mp4",
 	'MITTEL4' : "webm.h264.mp4",
@@ -64,9 +66,9 @@ video_qualities = {
 
 video_quality = "MITTEL"	
 
-video_file_pattern = re.compile(r"http://download\.media\." + \
-	"tagesschau\.de/video/\d{4}\/\d{4}/TV-\d{8}-\d{4}-\d{4}\." + \
-	video_qualities[video_quality])
+video_file_pattern = re.compile(r"http://download\.media\." + 
+	"tagesschau\.de/video/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
+	(video_prefix, video_qualities[video_quality]))
 		
 	
 """
@@ -76,6 +78,8 @@ http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.mp3
 http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.ogg
 """
 
+audio_prefix = "AU"
+
 audio_qualities = {
 	"MP3" : "mp3",
 	"OGG" : "ogg"}
@@ -83,8 +87,8 @@ audio_qualities = {
 audio_quality = "MP3"
 
 audio_file_pattern = re.compile(r"http://media\.tagesschau\.de/" + \
-	"audio/\d{4}\/\d{4}/AU-\d{8}-\d{4}-\d{4}\." + \
-	audio_qualities[audio_quality])
+	"audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
+	(audio_prefix, audio_qualities[audio_quality]))
 	
 
 url_pattern = re.compile(r"\d*\.html")
@@ -126,6 +130,10 @@ def cook_soup(opener, link, dir=None, name=None, data=None):
 def main():	
 	# Will hold all media urls with their attributes
 	medias = {}
+	
+	count = {}
+	count[video_prefix] = 0
+	count[audio_prefix] = 0
 
 	# Prepare the opener
 	cj = http.cookiejar.CookieJar()
@@ -180,7 +188,8 @@ def main():
 	for link in links:
 		
 		name = link.split("/")[-1]
-		dir = location + re.sub(url_pattern, "", name) + "/"
+		general_topic = re.sub(url_pattern, "", name) 
+		dir = location + general_topic + "/"
 		mkdir(dir)
 		
 		soup = cook_soup(opener, host + link, dir, name)
@@ -190,12 +199,12 @@ def main():
 		
 		title = soup.find("title").get_text().split(" | ")[0]
 		if len(audios) + len(videos) == 0:
-			print(bcolors.FAIL + "   ~0~  |   ~0~  | ~" + title + \
-				bcolors.ENDC)
+			print("%s   ~0~  |   ~0~  | ~%s%s" %
+				  (bcolors.FAIL, title, bcolors.ENDC))
 		else:
-			print("    " + str(len(audios)) + "   |    " + \
-				str(len(videos)) + "   | ", \
-				soup.find("title").get_text().split(" | ")[0])
+			print("   %2d   |   %2d   |  %s" % 
+				(len(audios), len(videos), 
+				 soup.find("title").get_text().split(" | ")[0]))
 		
 		# Insert the found media files into their corresponding arrays
 		
@@ -205,11 +214,15 @@ def main():
 		for m in media_url:
 			url = m["href"]
 			file = url.split("/")[-1]
-			key = file[3:]
+			prefix = file[:2]
+			key = general_topic + file[3:]
 			if key not in medias:
-				date = file[9:11] + "." + file[7:9] + "." + file[3:7] + \
-					   " " + file[12:14] + ":" + file[14:16]
-				medias[key] = (dir, file, url, date + ": " + title)
+				count[prefix] += 1
+				date = ("%s.%s.%s %s:%s" %
+					    (file[9:11], file[7:9], file[3:7], file[12:14], 
+					     file[14:16]))
+				medias[key] = (dir, file, url, 
+							   "%s: %s (%s)" % (date, title, prefix))
 	
 	
 	# We will prepare a command (that will be executed via os.system)
@@ -223,8 +236,8 @@ def main():
 		"\" > /dev/null 2>&1 > /dev/null & "
 	
 	print("--------|--------|---------------")
-	#print("    " + str(len(audio_files)) + "   |   " + 
-	#	str(len(video_files)) + "   | will be downloaded...")
+	print("   %2d   |   %2d   | will be downloaded..." % 
+		  (count[audio_prefix], count[video_prefix]))
 	
 	# Add for all audio and video files that are not present in the 
 	# filesystem an entry in the plylist and a call to wget, so it will 
@@ -245,7 +258,7 @@ def main():
 
 	playlist.close()
 	
-	os.system(fetch_command[:-3])
+	#os.system(fetch_command[:-3])
 	
 	return
 
@@ -261,6 +274,34 @@ if __name__ == '__main__':
 		bcolors.ENDC)
 	print()
 	
+	
+	# Arguments
+	parser = argparse.ArgumentParser(description="Optional arguments are")
+#-- Media Player
+#-- Download manager
+#-- Max age of files
+	parser.add_argument("-a, --audio-quality", 
+						default=audio_quality,
+						choices=audio_qualities.keys(),
+					    help="There are %d different audio qualities "
+							 "available for download" % 
+							 len(audio_qualities),
+						dest='audio-quality')
+	parser.add_argument('-v, --video-quality', 
+						default=video_quality,
+						choices=video_qualities.keys(),
+					    help="There are %d different video qualities "
+							 "available for download %s" % 
+							 (len(video_qualities), 
+							  str(video_qualities)),
+						dest='video-quality')
+	
+	parser.add_argument('-d, --download-directory',
+						dest='download-directory',
+						default=location,
+						help="The directory to which the files should"
+							 "should be downloaded")
+	parser.parse_args()
 	print("Audio quality: ", bcolors.OKBLUE, audio_quality, bcolors.ENDC)
 	print("Video quality: ", bcolors.OKBLUE, video_quality, bcolors.ENDC)
 	print("Downloading to:", bcolors.OKBLUE, location, \
