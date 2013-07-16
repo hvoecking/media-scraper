@@ -14,23 +14,23 @@
 
 
 import os
-import sys
-from datetime import date
 import re
+import sys
+import copy
 import argparse
-import urllib.request
-import urllib.parse
-import urllib.error
-import urllib.request
-import urllib.error
-import urllib.parse
+from datetime import date
+
 import http.cookiejar
+import urllib.parse
+import urllib.error
+import urllib.request
 from bs4 import BeautifulSoup
+
 import const as c
 
 # From http://stackoverflow.com/questions/287871/print-in-terminal-with-colors-using-python
 class bcolors:
-    BOLD_SEQ = "\033[1m"
+    BOLD_SEQ = '\033[1m'
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
     OKGREEN = '\033[92m'
@@ -48,13 +48,11 @@ class bcolors:
 
 
 def parse_args():
-	
-	# Arguments
-	parser = argparse.ArgumentParser(description="Optional arguments")
+	parser = argparse.ArgumentParser()
 							 
 	parser.add_argument("-v, --video-quality",
 						choices=c.VIDEO_QUALITIES.keys(),
-						default='webm',
+						default="webm",
 						dest='video',
 					    help="There are %d different video qualities "
 							 "available for download: %s" % 
@@ -63,7 +61,7 @@ def parse_args():
 
 	parser.add_argument("-a, --audio-quality",
 						choices=c.AUDIO_QUALITIES.keys(),
-						default='mp3',
+						default="mp3",
 						dest='audio',
 					    help="There are %d different audio qualities "
 							 "available for download." % 
@@ -96,7 +94,7 @@ def parse_args():
 							 "only m3u is supported")
 							 
 	parser.add_argument("-t, --download-tool",
-						choices={'curl','wget'}
+						choices={"curl","wget"},
 						dest='tool',
 						default="curl",
 						help="The command line tool used to download "
@@ -134,13 +132,13 @@ def setup():
 		video/2013/0526/TV-20130526-2257-3401.webl.h264.mp4
 	"""
 
-	c.VIDEO_PREFIX = "TV"
+	c.VIDEO_PREFIX = 'TV'
 
 	c.VIDEO_QUALITIES = {
-		"mobil" : "podm.h264.mp4",
+		'mobil' : "podm.h264.mp4",
 		'mittel' : "webm.h264.mp4",
 		'webm' : "webm.webm",
-		'hoch' : 'webl.h264.mp4'}
+		'hoch' : "webl.h264.mp4"}
 
 		
 	"""
@@ -150,16 +148,17 @@ def setup():
 	http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.ogg
 	"""
 
-	c.AUDIO_PREFIX = "AU"
+	c.AUDIO_PREFIX = 'AU'
 
 	c.AUDIO_QUALITIES = {
-		"mp3" : "mp3",
-		"ogg" : "ogg"}
+		'mp3' : "mp3",
+		'ogg' : "ogg"}
 
 	c.URL_PATTERN = re.compile(r"\d*\.html")
 	
 	
 	args = parse_args()
+	args.dir += "/"
 	
 	
 	c.HEADERS = {'User-Agent': args.ua}
@@ -169,7 +168,7 @@ def setup():
 		"tagesschau\.de/video/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
 		(c.VIDEO_PREFIX, c.VIDEO_QUALITIES[args.video]))
 	
-	c.AUDIO_FILE_PATTERN = re.compile(r"http://media\.tagesschau\.de/" + \
+	c.AUDIO_FILE_PATTERN = re.compile(r"http://media\.tagesschau\.de/"
 		"audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
 		(c.AUDIO_PREFIX, c.AUDIO_QUALITIES[args.audio]))
 		
@@ -192,7 +191,7 @@ def mkdir(directory):
 
 # Saves the html (as string) to a file in dir
 def save_as(html, dir, name):
-	f = open(dir + name, "w")
+	f = open(dir + name, 'w')
 	f.write(str(html))
 	f.close()
 	
@@ -207,6 +206,11 @@ def cook_soup(opener, url, dir=None, name=None, data=None):
 		
 	return BeautifulSoup(html)
 	
+def create_counter():
+	counter = {}
+	counter[c.VIDEO_PREFIX] = 0
+	counter[c.AUDIO_PREFIX] = 0
+	return counter
 
 def main(location, age, player, playlist_type, tool, website):	
 	
@@ -214,16 +218,14 @@ def main(location, age, player, playlist_type, tool, website):
 	mkdir(location)
 	
 	playlist_file = location + today + "." + playlist_type
-	playlist = open(playlist_file, "w")
+	playlist = open(playlist_file, 'w')
 	if playlist_type == 'm3u':
 		playlist.write("#EXTM3U\n")
 	
 	# Will hold all media urls with their attributes
 	medias = {}
 	
-	count = {}
-	count[c.VIDEO_PREFIX] = 0
-	count[c.AUDIO_PREFIX] = 0
+	count = create_counter()
 
 	# Prepare the opener
 	cj = http.cookiejar.CookieJar()
@@ -246,7 +248,7 @@ def main(location, age, player, playlist_type, tool, website):
 	mod modA
 	"""		
 		
-	news = soup.find_all(attrs={"class" : 
+	news = soup.find_all(attrs={'class' : 
 			re.compile(r"modClassic|modPremium|modB")})
 
 	print("Opening", len(news), "articles on", website, "|", today)
@@ -262,8 +264,8 @@ def main(location, age, player, playlist_type, tool, website):
 			if not_lower_box:
 				headlines = headlines[:1]
 			for headline in headlines:
-				if headline.has_attr("class") and \
-					"icon" in headline["class"]:
+				if headline.has_attr('class') and \
+					'icon' in headline['class']:
 					continue
 				url = headline['href']
 				if url.startswith("/") and not url in urls:
@@ -287,33 +289,59 @@ def main(location, age, player, playlist_type, tool, website):
 		videos = soup.find_all(attrs={'href': c.VIDEO_FILE_PATTERN})
 		audios = soup.find_all(attrs={'href': c.AUDIO_FILE_PATTERN})
 		
-		title = soup.find("title").get_text().split(" | ")[0]
-		if len(videos) + len(audios) == 0:
-			print("%s   ~0~  |   ~0~  | ~%s%s" %
-				  (bcolors.FAIL, title, bcolors.ENDC))
-		else:
-			print("   %2d   |   %2d   |  %s" % 
-				(len(videos), len(audios),
-				 soup.find("title").get_text().split(" | ")[0]))
+		title = soup.find('title').get_text().split(" | ")[0]
 		
 		# Insert the found media files into their corresponding arrays
 		
 		media_url = videos + audios
 		
+		accepted = copy.copy(count)
 		
 		for m in media_url:
-			m_url = m["href"]
+			m_url = m['href']
 			file = m_url.split("/")[-1]
 			prefix = file[:2]
-			key = general_topic + file[3:]
-			if key not in medias:
+			key = file[3:]
+			if not (key in medias or os.path.exists(dir + file)):
 				count[prefix] += 1
 				time = ("%s.%s.%s %s:%s" %
 					    (file[9:11], file[7:9], file[3:7], file[12:14], 
 					     file[14:16]))
-				medias[key] = (dir, file, m_url, 
-							   "%s: %s (%s)" % (time, title, prefix))
-	
+				medias[key] = (dir, file, m_url,
+							   "%s: %s (%s)" % (time, title, prefix),
+							   general_topic)
+							   
+		if len(videos) + len(audios) == 0:
+			print("%s   -0-  |   -0-  | ~%s%s" %
+				  (bcolors.FAIL, title, bcolors.ENDC))
+		elif accepted == count:
+			string = ""
+			if len(videos) == 0:
+				string += "    0   "
+			else:
+				string += ("%s   (%d)  %s" % 
+						   (bcolors.OKBLUE, len(videos), bcolors.ENDC))
+			string += "|"
+			if len(audios) == 0:
+				string += "    0   "
+			else:
+				string += ("%s   (%d)  %s" % 
+						   (bcolors.OKBLUE, len(audios), bcolors.ENDC))
+			string += "|%s ~%s%s" %  (bcolors.OKBLUE, title, bcolors.ENDC)
+			print (string)
+		elif (len(videos) != 0 and 
+		      accepted[c.VIDEO_PREFIX] == count[c.VIDEO_PREFIX]):
+			print("%s   (%d)  %s|   %2d   |  %s" % 
+				  (bcolors.OKBLUE, len(videos), bcolors.ENDC,
+				   len(audios), title))
+		elif (len(audios) != 0 and 
+		      accepted[c.AUDIO_PREFIX] == count[c.AUDIO_PREFIX]):
+			print("   %2d   |%s   (%d)  %s|  %s" % 
+				  (len(videos), bcolors.OKBLUE, len(audios),
+				   bcolors.ENDC, title))
+		else:
+			print("   %2d   |   %2d   |  %s" % 
+				  (len(videos), len(audios), title))
 	
 	# We will prepare a command (that will be executed via os.system)
 	# in this string
@@ -322,17 +350,24 @@ def main(location, age, player, playlist_type, tool, website):
 	# the file download can already start in the background. The output
 	# vlc is sent to /dev/null so it doesn't interfere with the wget 
 	# output
-	fetch_command = "sleep 1 && vlc \"" + playlist_file + \
-		"\" > /dev/null 2>&1 > /dev/null & "
+	cmd = ["sleep 1 && vlc \"%s\" > /dev/null 2>&1 > /dev/null & " % 
+		  playlist_file]
 	
 	print("--------|--------|---------------")
 	print("   %2d   |   %2d   | will be downloaded..." % 
 		  (count[c.VIDEO_PREFIX], count[c.AUDIO_PREFIX]))
 	
+	# Sort the media keys to be grouped by topic	  
+	sorted_medias = {}
+	for key in medias.keys():
+		sorted_medias[general_topic + key] = medias[key]
+		
+	keys = sorted(sorted_medias.keys())
+	medias = sorted_medias
+	
 	# Add for all video and audio files that are not present in the 
 	# filesystem an entry in the plylist and a call to wget, so it will 
 	# be downloaded
-	keys = sorted(medias.keys())
 	for key in keys:
 		e = medias[key]
 		dir = e[0]
@@ -340,20 +375,26 @@ def main(location, age, player, playlist_type, tool, website):
 		url = e[2]
 		title = e[3]
 		path = dir + file
-		if not os.path.exists(path):
-			if playlist_type == 'm3u':
-				playlist.write("#EXTINF:,,%s\n" % title)
-			playlist.write(path + "\n")
-			if tool == 'curl':
-				fetch_command += ("cd %s && curl %s -o %s 2>&1 | grep -v "
-								  "Total && " % (dir, url, file))
-			elif tool == 'wget':
-				fetch_command += ("cd %s && wget %s -O %s 2>&1 | grep -v "
-								  "Total && " % (dir, url, file))
-
+		if playlist_type == 'm3u':
+			playlist.write("#EXTINF:,,%s\n" % title)
+		playlist.write(path + "\n")
+		option = ""
+		grep = ""
+		if tool == 'curl':
+			option = "-o"
+			grep = "-v Total"
+		elif tool == 'wget':
+			option = "-O"
+			grep =  "saved"
+		cmd.append("cd %s && %s %s %s %s 2>&1 | grep %s && " % 
+				   (dir, tool, url, option, file, grep))
+	
 	playlist.close()
 	
-	os.system(fetch_command[:-3])
+	
+	command = ''.join(cmd) + "echo done"
+	
+	os.system(command)
 	
 	return
 
@@ -363,6 +404,7 @@ if __name__ == '__main__':
 	print(" (c) by" + bcolors.BOLD_SEQ + " Heye Voecking " +
 		bcolors.ENDC + bcolors.OKBLUE + \
 		"<heye.voecking+mediascraper[at]gmail[dot]com>" + bcolors.ENDC)
+	print()
 	print(bcolors.FAIL + \
 		"This program is distributed WITHOUT ANY WARRANTY!" +
 		bcolors.ENDC)
