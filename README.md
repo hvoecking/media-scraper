@@ -38,9 +38,9 @@ So if you do, please contact me first before publishing your code!
 TODO
 ====
 - Fix formatting of last row on downloading
-- Do not touch files anymore
-- Do not split up in subfolders by date anymore to avoid downloading same files multiple times
-- Set track name in playlist as website title
+x Do not touch files anymore
+x Do not split up in subfolders by date anymore to avoid downloading same files multiple times
+x Set track name in playlist as website title
 - Download to same directory per topic (cut off numbers at the end)
 - Command line options / settings file
 -- Help

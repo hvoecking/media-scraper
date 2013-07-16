@@ -94,20 +94,11 @@ def mkdir(directory):
 	if not os.path.exists(directory):
 		os.makedirs(directory)
 		
-# Returns False if file alreaty existed
-def touch(file):
-	if not os.path.exists(file):
-		#open(file, "w").close()
-		return True
-	return False
-		
 
 # Setup directory and playlist
 location = "/tmp/tagesschau/"
 mkdir(location)
-location += today + "/"
-mkdir(location)
-playlist_file = location + "pl.m3u"
+playlist_file = location + today + ".m3u"
 playlist = open(playlist_file, "w")
 playlist.write("#EXTM3U\n")
 
@@ -129,13 +120,9 @@ def cook_soup(opener, link, dir=None, name=None, data=None):
 	return BeautifulSoup(html)
 	
 
-def main():
-	
-	audio_files = []
-	video_files = []
-	
-	# To prevent download of the same file multiple times
-	media_files = {}
+def main():	
+	# Will hold all media urls with their attributes
+	medias = {}
 
 	# Prepare the opener
 	cj = http.cookiejar.CookieJar()
@@ -144,7 +131,7 @@ def main():
 	soup = cook_soup(opener, host)
 
 
-	# Now search for news articles
+	# Search for news articles
 	
 	"""
 	We want links with classes:
@@ -163,7 +150,7 @@ def main():
 
 	print("Opening", len(news), "articles on", host, "|", today)
 	
-	# Now navigate through the document and extract the links to the 
+	# Navigate through the document and extract the urls to the 
 	# articles wich will be stored in "links"
 	links = []
 	for article in news:
@@ -209,20 +196,17 @@ def main():
 		
 		# Insert the found media files into their corresponding arrays
 		
-		for a in audios:
-			audio = a["href"]
-			file_name = audio.split("/")[-1]
-			if file_name not in media_files:
-				media_files[file_name] = 1
-				audio_files.append((dir, audio))
-				
-		for v in videos:
-			video = v["href"]
-			file_name = video.split("/")[-1]
-			if file_name not in media_files:
-				media_files[file_name] = 1
-				video_files.append((dir, video))
-	
+		media_url = audios + videos
+		
+		
+		for m in media_url:
+			url = m["href"]
+			file = url.split("/")[-1]
+			key = file[3:]
+			if key not in medias:
+				date = file[9:11] + "." + file[7:9] + "." + file[3:7] + \
+					   " " + file[12:14] + ":" + file[14:16]
+				medias[key] = (dir, file, url, date + ": " + title)
 	
 	
 	# We will prepare a command (that will be executed via os.system)
@@ -233,22 +217,28 @@ def main():
 	# vlc is sent to /dev/null so it doesn't interfere with the wget 
 	# output
 	fetch_command = "sleep 1 && vlc \"" + playlist_file + \
-		"\" >> /dev/null 2>&1 >> /dev/null & "
+		"\" > /dev/null 2>&1 > /dev/null & "
 	
 	print("--------|--------|---------------")
-	print("    " + str(len(audio_files)) + "   |   " + \
-		str(len(video_files)) + "   | will be downloaded...")
+	#print("    " + str(len(audio_files)) + "   |   " + 
+	#	str(len(video_files)) + "   | will be downloaded...")
 	
 	# Add for all audio and video files that are not present in the 
 	# filesystem an entry in the plylist and a call to wget, so it will 
 	# be downloaded
-	for list in (audio_files, video_files):
-		for e in list:
-			file = e[1].split("/")[-1]
-			if touch(e[0] + file):
-				playlist.write(e[0] + file + "\n")
-				fetch_command += "cd " + e[0] + " && curl " + e[1] + \
-					" -o " + file + " 2>&1 | grep -v Total && "
+	keys = sorted(medias.keys())
+	for key in keys:
+		e = medias[key]
+		dir = e[0]
+		file = e[1].split("/")[-1]
+		url = e[2]
+		title = e[3]
+		path = dir + file
+		if not os.path.exists(path):
+			playlist.write("#EXTINF:,,%s\n" % title)
+			playlist.write(path + "\n")
+			fetch_command += ("cd %s && curl %s -o %s 2>&1 | grep -v "
+							  "Total && " % (dir, url, file))
 
 	playlist.close()
 	
