@@ -51,5 +51,8 @@ v Download to same directory per topic (cut off numbers at the end)
 -- Max age of files
 - Save in default downloads folder
 - Sort playlist by article > time
+- Format code
+-- Quote style according to http://stackoverflow.com/questions/56011/single-quotes-vs-double-quotes-in-python
+-- Code style according to http://google-styleguide.googlecode.com/svn/trunk/pyguide.html#Semicolons
 - Render the webpage and set it as covor image for audio files
 - Buffered cmd-line output
