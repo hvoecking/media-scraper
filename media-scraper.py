@@ -85,6 +85,9 @@ audio_quality = "MP3"
 audio_file_pattern = re.compile(r"http://media\.tagesschau\.de/" + \
 	"audio/\d{4}\/\d{4}/AU-\d{8}-\d{4}-\d{4}\." + \
 	audio_qualities[audio_quality])
+	
+
+url_pattern = re.compile(r"\d*\.html")
 
 	
 today = str(date.today())
@@ -177,7 +180,7 @@ def main():
 	for link in links:
 		
 		name = link.split("/")[-1]
-		dir = location + name.replace(".html", "") + "/"
+		dir = location + re.sub(url_pattern, "", name) + "/"
 		mkdir(dir)
 		
 		soup = cook_soup(opener, host + link, dir, name)
@@ -230,7 +233,7 @@ def main():
 	for key in keys:
 		e = medias[key]
 		dir = e[0]
-		file = e[1].split("/")[-1]
+		file = e[1]
 		url = e[2]
 		title = e[3]
 		path = dir + file
