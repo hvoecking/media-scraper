@@ -58,9 +58,9 @@ http://download.media.tagesschau.de/
 	video/2013/0526/TV-20130526-2257-3401.webl.h264.mp4
 """
 
-video_prefix = "TV"
+c.VIDEO_PREFIX = "TV"
 
-video_qualities = {
+c.VIDEO_QUALITIES = {
 	"mobil" : "podm.h264.mp4",
 	'mittel' : "webm.h264.mp4",
 	'webm' : "webm.webm",
@@ -74,9 +74,9 @@ http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.mp3
 http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.ogg
 """
 
-audio_prefix = "AU"
+c.AUDIO_PREFIX = "AU"
 
-audio_qualities = {
+c.AUDIO_QUALITIES = {
 	"mp3" : "mp3",
 	"ogg" : "ogg"}
 
@@ -108,37 +108,41 @@ def cook_soup(opener, link, dir=None, name=None, data=None):
 	return BeautifulSoup(html)
 	
 
-def main(audio_quality, video_quality, location, age, player,
-		 playlist, tool, headers, website):	
+def main(video_quality, audio_quality, location, age, player,
+		 playlist_type, tool, headers, website):	
 	
 	
-	video_file_pattern = re.compile(r"http://download\.media\." + 
+	c.VIDEO_FILE_PATTERN = re.compile(r"http://download\.media\." + 
 		"tagesschau\.de/video/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
-		(video_prefix, video_qualities[video_quality]))
+		(c.VIDEO_PREFIX, c.VIDEO_QUALITIES[video_quality]))
 	
-	audio_file_pattern = re.compile(r"http://media\.tagesschau\.de/" + \
+	c.AUDIO_FILE_PATTERN = re.compile(r"http://media\.tagesschau\.de/" + \
 		"audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
-		(audio_prefix, audio_qualities[audio_quality]))
+		(c.AUDIO_PREFIX, c.AUDIO_QUALITIES[audio_quality]))
 	
-	print("Audio quality: ", bcolors.OKBLUE, audio_quality, bcolors.ENDC)
 	print("Video quality: ", bcolors.OKBLUE, video_quality, bcolors.ENDC)
+	print("Audio quality: ", bcolors.OKBLUE, audio_quality, bcolors.ENDC)
 	print("Downloading to:", bcolors.OKBLUE, location, \
 		bcolors.ENDC)
 	print()
 	
 	today = str(date.today())
-	# Setup directory and playlist
 	mkdir(location)
-	playlist_file = location + today + ".m3u"
+	
+	playlist_file = location + today + "." + playlist_type
 	playlist = open(playlist_file, "w")
-	playlist.write("#EXTM3U\n")
+	if playlist_type == 'm3u':
+		playlist.write("#EXTM3U\n")
+	else:
+		playlist.close()
+		raise Exception("Unsupported playlist type '%s'" % playlist_type)
 	
 	# Will hold all media urls with their attributes
 	medias = {}
 	
 	count = {}
-	count[video_prefix] = 0
-	count[audio_prefix] = 0
+	count[c.VIDEO_PREFIX] = 0
+	count[c.AUDIO_PREFIX] = 0
 
 	# Prepare the opener
 	cj = http.cookiejar.CookieJar()
@@ -186,7 +190,7 @@ def main(audio_quality, video_quality, location, age, player,
 					
 					
 	print()
-	print(bcolors.BOLD_SEQ + " audios | videos | Title" + bcolors.ENDC)
+	print(bcolors.BOLD_SEQ + " videos | audios | Title" + bcolors.ENDC)
 	print("--------|--------|---------------")
 	
 	# Now look on each page if video or audio files are present
@@ -199,21 +203,21 @@ def main(audio_quality, video_quality, location, age, player,
 		
 		soup = cook_soup(opener, website + link, dir, name)
 			
-		videos = soup.find_all(attrs={'href': video_file_pattern})
-		audios = soup.find_all(attrs={'href': audio_file_pattern})
+		videos = soup.find_all(attrs={'href': c.VIDEO_FILE_PATTERN})
+		audios = soup.find_all(attrs={'href': c.AUDIO_FILE_PATTERN})
 		
 		title = soup.find("title").get_text().split(" | ")[0]
-		if len(audios) + len(videos) == 0:
+		if len(videos) + len(audios) == 0:
 			print("%s   ~0~  |   ~0~  | ~%s%s" %
 				  (bcolors.FAIL, title, bcolors.ENDC))
 		else:
 			print("   %2d   |   %2d   |  %s" % 
-				(len(audios), len(videos), 
+				(len(videos), len(audios),
 				 soup.find("title").get_text().split(" | ")[0]))
 		
 		# Insert the found media files into their corresponding arrays
 		
-		media_url = audios + videos
+		media_url = videos + audios
 		
 		
 		for m in media_url:
@@ -242,9 +246,9 @@ def main(audio_quality, video_quality, location, age, player,
 	
 	print("--------|--------|---------------")
 	print("   %2d   |   %2d   | will be downloaded..." % 
-		  (count[audio_prefix], count[video_prefix]))
+		  (count[c.VIDEO_PREFIX], count[c.AUDIO_PREFIX]))
 	
-	# Add for all audio and video files that are not present in the 
+	# Add for all video and audio files that are not present in the 
 	# filesystem an entry in the plylist and a call to wget, so it will 
 	# be downloaded
 	keys = sorted(medias.keys())
@@ -271,23 +275,24 @@ def parse_args():
 	
 	# Arguments
 	parser = argparse.ArgumentParser(description="Optional arguments")
-
-	parser.add_argument("-a, --audio-quality",
-						choices=audio_qualities.keys(),
-						default='mp3',
-						dest='audio',
-					    help="There are %d different audio qualities "
-							 "available for download." % 
-							 len(audio_qualities))
 							 
 	parser.add_argument("-v, --video-quality",
-						choices=video_qualities.keys(),
+						choices=c.VIDEO_QUALITIES.keys(),
 						default='webm',
 						dest='video',
 					    help="There are %d different video qualities "
 							 "available for download: %s" % 
-							 (len(video_qualities), 
-							  str(video_qualities)))
+							 (len(c.VIDEO_QUALITIES), 
+							  str(c.VIDEO_QUALITIES)))
+
+	parser.add_argument("-a, --audio-quality",
+						choices=c.AUDIO_QUALITIES.keys(),
+						default='mp3',
+						dest='audio',
+					    help="There are %d different audio qualities "
+							 "available for download." % 
+							 len(c.AUDIO_QUALITIES))
+							 
 	location = "/tmp/tagesschau"
 	parser.add_argument("-d, --download-directory",
 						dest='dir',
@@ -353,5 +358,5 @@ if __name__ == '__main__':
 	
 	headers = {'User-Agent': args.ua}
 	
-	main(args.audio, args.video, args.dir, args.age, args.player, 
+	main(args.video, args.audio, args.dir, args.age, args.player, 
 		 args.playlist, args.tool, headers, args.website)
