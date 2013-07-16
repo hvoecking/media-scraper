@@ -13,9 +13,18 @@
 #  
 
 
-import urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, re, os, sys, time, http.cookiejar
-import argparse
+import os
+import sys
 from datetime import date
+import re
+import argparse
+import urllib.request
+import urllib.parse
+import urllib.error
+import urllib.request
+import urllib.error
+import urllib.parse
+import http.cookiejar
 from bs4 import BeautifulSoup
 import const as c
 
@@ -36,13 +45,6 @@ class bcolors:
         self.WARNING = ''
         self.FAIL = ''
         self.ENDC = ''
-
-# Constants
-user_agent = 'Mozilla/5.0 (Windows; U; Windows NT 6.1; ru; rv:1.9.2.3) \
-Gecko/20100401 Firefox/4.0 (.NET CLR 3.5.30729)'
-headers = {'User-Agent': user_agent}
-host = 'http://www.tagesschau.de'
-
 """
 Style of video links:
 
@@ -107,7 +109,7 @@ def cook_soup(opener, link, dir=None, name=None, data=None):
 	
 
 def main(audio_quality, video_quality, location, age, player,
-		 playlist, tool):	
+		 playlist, tool, headers, website):	
 	
 	
 	video_file_pattern = re.compile(r"http://download\.media\." + 
@@ -142,7 +144,7 @@ def main(audio_quality, video_quality, location, age, player,
 	cj = http.cookiejar.CookieJar()
 	opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
 	
-	soup = cook_soup(opener, host)
+	soup = cook_soup(opener, website)
 
 
 	# Search for news articles
@@ -162,7 +164,7 @@ def main(audio_quality, video_quality, location, age, player,
 	news = soup.find_all(attrs={"class" : 
 			re.compile(r"modClassic|modPremium|modB")})
 
-	print("Opening", len(news), "articles on", host, "|", today)
+	print("Opening", len(news), "articles on", website, "|", today)
 	
 	# Navigate through the document and extract the urls to the 
 	# articles wich will be stored in "links"
@@ -195,7 +197,7 @@ def main(audio_quality, video_quality, location, age, player,
 		dir = location + general_topic + "/"
 		mkdir(dir)
 		
-		soup = cook_soup(opener, host + link, dir, name)
+		soup = cook_soup(opener, website + link, dir, name)
 			
 		videos = soup.find_all(attrs={'href': video_file_pattern})
 		audios = soup.find_all(attrs={'href': audio_file_pattern})
@@ -265,18 +267,7 @@ def main(audio_quality, video_quality, location, age, player,
 	
 	return
 
-
-if __name__ == '__main__':
-	print(bcolors.BOLD_SEQ + "Media Scraper for tagesschau.de" +
-		bcolors.ENDC)
-	print(" (c) by" + bcolors.BOLD_SEQ + " Heye Voecking " +
-		bcolors.ENDC + bcolors.OKBLUE + \
-		"<heye.voecking+mediascraper[at]gmail[dot]com>" + bcolors.ENDC)
-	print(bcolors.FAIL + \
-		"This program is distributed WITHOUT ANY WARRANTY!" +
-		bcolors.ENDC)
-	print()
-	
+def parse_args():
 	
 	# Arguments
 	parser = argparse.ArgumentParser(description="Optional arguments")
@@ -331,7 +322,36 @@ if __name__ == '__main__':
 							 "the media files. Only tested with curl "
 							 "and wget so far.")
 							 
-	args = parser.parse_args()
+	default_ua = ("Mozilla/5.0 (Windows; U; Windows NT 6.1; ru; "
+				  "rv:1.9.2.3) Gecko/20100401 Firefox/4.0 "
+				  "(.NET CLR 3.5.30729)")
+	parser.add_argument("-u, --user-agent",
+						dest='ua',
+						default=default_ua,
+						help="The user agent to be used.")
+						
+	parser.add_argument("-w, --website",
+						dest='website',
+						default="http://www.tagesschau.de",
+						help="The website where to scrape. Currently "
+							 "only tagesschau.de is supported.")
+							 
+	return parser.parse_args()
+
+if __name__ == '__main__':
+	print(bcolors.BOLD_SEQ + "Media Scraper for tagesschau.de" +
+		bcolors.ENDC)
+	print(" (c) by" + bcolors.BOLD_SEQ + " Heye Voecking " +
+		bcolors.ENDC + bcolors.OKBLUE + \
+		"<heye.voecking+mediascraper[at]gmail[dot]com>" + bcolors.ENDC)
+	print(bcolors.FAIL + \
+		"This program is distributed WITHOUT ANY WARRANTY!" +
+		bcolors.ENDC)
+	print()
+	
+	args = parse_args()
+	
+	headers = {'User-Agent': args.ua}
 	
 	main(args.audio, args.video, args.dir, args.age, args.player, 
-		 args.playlist, args.tool)
+		 args.playlist, args.tool, headers, args.website)
