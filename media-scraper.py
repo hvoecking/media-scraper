@@ -293,10 +293,9 @@ def parse_args():
 							 "available for download." % 
 							 len(c.AUDIO_QUALITIES))
 							 
-	location = "/tmp/tagesschau"
 	parser.add_argument("-d, --download-directory",
 						dest='dir',
-						default=location,
+						default="~/Downloads",
 						help="The directory to which the files should "
 							 "be downloaded.")
 							 
