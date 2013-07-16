@@ -45,231 +45,7 @@ class bcolors:
         self.WARNING = ''
         self.FAIL = ''
         self.ENDC = ''
-"""
-Style of video links:
 
-http://download.media.tagesschau.de/
-	video/2013/0526/TV-20130526-2257-3401.podm.h264.mp4
-http://download.media.tagesschau.de/
-	video/2013/0526/TV-20130526-2257-3401.webm.h264.mp4
-http://download.media.tagesschau.de/
-	video/2013/0526/TV-20130526-2257-3401.webm.webm
-http://download.media.tagesschau.de/
-	video/2013/0526/TV-20130526-2257-3401.webl.h264.mp4
-"""
-
-c.VIDEO_PREFIX = "TV"
-
-c.VIDEO_QUALITIES = {
-	"mobil" : "podm.h264.mp4",
-	'mittel' : "webm.h264.mp4",
-	'webm' : "webm.webm",
-	'hoch' : 'webl.h264.mp4'}
-
-	
-"""
-Style of audio links:
-
-http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.mp3
-http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.ogg
-"""
-
-c.AUDIO_PREFIX = "AU"
-
-c.AUDIO_QUALITIES = {
-	"mp3" : "mp3",
-	"ogg" : "ogg"}
-
-url_pattern = re.compile(r"\d*\.html")
-
-
-# Create a directory if it doesn't exist
-def mkdir(directory):
-	if not os.path.exists(directory):
-		os.makedirs(directory)
-		
-
-
-# Saves the html (as string) to a file in dir
-def save_as(html, dir, name):
-	f = open(dir + name, "w")
-	f.write(str(html))
-	f.close()
-	
-# Opens a link and returns it's page as a BeautifulSoup object
-def cook_soup(opener, link, dir=None, name=None, data=None):
-	request = urllib.request.Request(link, data, headers)
-	response = opener.open(request)
-
-	html = response.read()
-	if dir is not None and name is not None:
-		save_as(html, dir, name)
-		
-	return BeautifulSoup(html)
-	
-
-def main(video_quality, audio_quality, location, age, player,
-		 playlist_type, tool, headers, website):	
-	
-	
-	c.VIDEO_FILE_PATTERN = re.compile(r"http://download\.media\." + 
-		"tagesschau\.de/video/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
-		(c.VIDEO_PREFIX, c.VIDEO_QUALITIES[video_quality]))
-	
-	c.AUDIO_FILE_PATTERN = re.compile(r"http://media\.tagesschau\.de/" + \
-		"audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
-		(c.AUDIO_PREFIX, c.AUDIO_QUALITIES[audio_quality]))
-	
-	print("Video quality: ", bcolors.OKBLUE, video_quality, bcolors.ENDC)
-	print("Audio quality: ", bcolors.OKBLUE, audio_quality, bcolors.ENDC)
-	print("Downloading to:", bcolors.OKBLUE, location, \
-		bcolors.ENDC)
-	print()
-	
-	today = str(date.today())
-	mkdir(location)
-	
-	playlist_file = location + today + "." + playlist_type
-	playlist = open(playlist_file, "w")
-	if playlist_type == 'm3u':
-		playlist.write("#EXTM3U\n")
-	else:
-		playlist.close()
-		raise Exception("Unsupported playlist type '%s'" % playlist_type)
-	
-	# Will hold all media urls with their attributes
-	medias = {}
-	
-	count = {}
-	count[c.VIDEO_PREFIX] = 0
-	count[c.AUDIO_PREFIX] = 0
-
-	# Prepare the opener
-	cj = http.cookiejar.CookieJar()
-	opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
-	
-	soup = cook_soup(opener, website)
-
-
-	# Search for news articles
-	
-	"""
-	We want links with classes:
-	mod modA modPremium smallImage
-	mod modA modPremium smallImage
-	mod modA modClassic
-	mod modA modClassic
-	
-	We don't want links with classes:
-	mod modD modMini
-	mod modA
-	"""		
-		
-	news = soup.find_all(attrs={"class" : 
-			re.compile(r"modClassic|modPremium|modB")})
-
-	print("Opening", len(news), "articles on", website, "|", today)
-	
-	# Navigate through the document and extract the urls to the 
-	# articles wich will be stored in "links"
-	links = []
-	for article in news:
-		teasers = article.find_all(attrs={'class' : "teaser"})
-		not_lower_box = len(teasers) == 1
-		for teaser in teasers:
-			headlines = teaser.find_all('a')
-			if not_lower_box:
-				headlines = headlines[:1]
-			for headline in headlines:
-				if headline.has_attr("class") and \
-					"icon" in headline["class"]:
-					continue
-				link = headline['href']
-				if link.startswith("/") and not link in links:
-					links.append(link)
-					
-					
-	print()
-	print(bcolors.BOLD_SEQ + " videos | audios | Title" + bcolors.ENDC)
-	print("--------|--------|---------------")
-	
-	# Now look on each page if video or audio files are present
-	for link in links:
-		
-		name = link.split("/")[-1]
-		general_topic = re.sub(url_pattern, "", name) 
-		dir = location + general_topic + "/"
-		mkdir(dir)
-		
-		soup = cook_soup(opener, website + link, dir, name)
-			
-		videos = soup.find_all(attrs={'href': c.VIDEO_FILE_PATTERN})
-		audios = soup.find_all(attrs={'href': c.AUDIO_FILE_PATTERN})
-		
-		title = soup.find("title").get_text().split(" | ")[0]
-		if len(videos) + len(audios) == 0:
-			print("%s   ~0~  |   ~0~  | ~%s%s" %
-				  (bcolors.FAIL, title, bcolors.ENDC))
-		else:
-			print("   %2d   |   %2d   |  %s" % 
-				(len(videos), len(audios),
-				 soup.find("title").get_text().split(" | ")[0]))
-		
-		# Insert the found media files into their corresponding arrays
-		
-		media_url = videos + audios
-		
-		
-		for m in media_url:
-			url = m["href"]
-			file = url.split("/")[-1]
-			prefix = file[:2]
-			key = general_topic + file[3:]
-			if key not in medias:
-				count[prefix] += 1
-				time = ("%s.%s.%s %s:%s" %
-					    (file[9:11], file[7:9], file[3:7], file[12:14], 
-					     file[14:16]))
-				medias[key] = (dir, file, url, 
-							   "%s: %s (%s)" % (time, title, prefix))
-	
-	
-	# We will prepare a command (that will be executed via os.system)
-	# in this string
-	
-	# At first we are going to start vlc with a delay of 1 second, so
-	# the file download can already start in the background. The output
-	# vlc is sent to /dev/null so it doesn't interfere with the wget 
-	# output
-	fetch_command = "sleep 1 && vlc \"" + playlist_file + \
-		"\" > /dev/null 2>&1 > /dev/null & "
-	
-	print("--------|--------|---------------")
-	print("   %2d   |   %2d   | will be downloaded..." % 
-		  (count[c.VIDEO_PREFIX], count[c.AUDIO_PREFIX]))
-	
-	# Add for all video and audio files that are not present in the 
-	# filesystem an entry in the plylist and a call to wget, so it will 
-	# be downloaded
-	keys = sorted(medias.keys())
-	for key in keys:
-		e = medias[key]
-		dir = e[0]
-		file = e[1]
-		url = e[2]
-		title = e[3]
-		path = dir + file
-		if not os.path.exists(path):
-			playlist.write("#EXTINF:,,%s\n" % title)
-			playlist.write(path + "\n")
-			fetch_command += ("cd %s && curl %s -o %s 2>&1 | grep -v "
-							  "Total && " % (dir, url, file))
-
-	playlist.close()
-	
-	#os.system(fetch_command[:-3])
-	
-	return
 
 def parse_args():
 	
@@ -320,11 +96,12 @@ def parse_args():
 							 "only m3u is supported")
 							 
 	parser.add_argument("-t, --download-tool",
+						choices={'curl','wget'}
 						dest='tool',
 						default="curl",
 						help="The command line tool used to download "
-							 "the media files. Only tested with curl "
-							 "and wget so far.")
+							 "the media files. Command line output "
+							 "is optimized for curl.")
 							 
 	default_ua = ("Mozilla/5.0 (Windows; U; Windows NT 6.1; ru; "
 				  "rv:1.9.2.3) Gecko/20100401 Firefox/4.0 "
@@ -341,6 +118,244 @@ def parse_args():
 							 "only tagesschau.de is supported.")
 							 
 	return parser.parse_args()
+	
+
+def setup():
+	"""
+	Style of video URLs:
+
+	http://download.media.tagesschau.de/
+		video/2013/0526/TV-20130526-2257-3401.podm.h264.mp4
+	http://download.media.tagesschau.de/
+		video/2013/0526/TV-20130526-2257-3401.webm.h264.mp4
+	http://download.media.tagesschau.de/
+		video/2013/0526/TV-20130526-2257-3401.webm.webm
+	http://download.media.tagesschau.de/
+		video/2013/0526/TV-20130526-2257-3401.webl.h264.mp4
+	"""
+
+	c.VIDEO_PREFIX = "TV"
+
+	c.VIDEO_QUALITIES = {
+		"mobil" : "podm.h264.mp4",
+		'mittel' : "webm.h264.mp4",
+		'webm' : "webm.webm",
+		'hoch' : 'webl.h264.mp4'}
+
+		
+	"""
+	Style of audio URLs:
+
+	http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.mp3
+	http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.ogg
+	"""
+
+	c.AUDIO_PREFIX = "AU"
+
+	c.AUDIO_QUALITIES = {
+		"mp3" : "mp3",
+		"ogg" : "ogg"}
+
+	c.URL_PATTERN = re.compile(r"\d*\.html")
+	
+	
+	args = parse_args()
+	
+	
+	c.HEADERS = {'User-Agent': args.ua}
+	
+	
+	c.VIDEO_FILE_PATTERN = re.compile(r"http://download\.media\." + 
+		"tagesschau\.de/video/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
+		(c.VIDEO_PREFIX, c.VIDEO_QUALITIES[args.video]))
+	
+	c.AUDIO_FILE_PATTERN = re.compile(r"http://media\.tagesschau\.de/" + \
+		"audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
+		(c.AUDIO_PREFIX, c.AUDIO_QUALITIES[args.audio]))
+		
+		
+	
+	print("Video quality: ", bcolors.OKBLUE, args.video, bcolors.ENDC)
+	print("Audio quality: ", bcolors.OKBLUE, args.audio, bcolors.ENDC)
+	print("Downloading to:", bcolors.OKBLUE, args.dir, \
+		bcolors.ENDC)
+	print()
+	
+	return args
+
+# Create a directory if it doesn't exist
+def mkdir(directory):
+	if not os.path.exists(directory):
+		os.makedirs(directory)
+		
+
+
+# Saves the html (as string) to a file in dir
+def save_as(html, dir, name):
+	f = open(dir + name, "w")
+	f.write(str(html))
+	f.close()
+	
+# Opens a url and returns it's page as a BeautifulSoup object
+def cook_soup(opener, url, dir=None, name=None, data=None):
+	request = urllib.request.Request(url, data, c.HEADERS)
+	response = opener.open(request)
+
+	html = response.read()
+	if dir is not None and name is not None:
+		save_as(html, dir, name)
+		
+	return BeautifulSoup(html)
+	
+
+def main(location, age, player, playlist_type, tool, website):	
+	
+	today = str(date.today())
+	mkdir(location)
+	
+	playlist_file = location + today + "." + playlist_type
+	playlist = open(playlist_file, "w")
+	if playlist_type == 'm3u':
+		playlist.write("#EXTM3U\n")
+	
+	# Will hold all media urls with their attributes
+	medias = {}
+	
+	count = {}
+	count[c.VIDEO_PREFIX] = 0
+	count[c.AUDIO_PREFIX] = 0
+
+	# Prepare the opener
+	cj = http.cookiejar.CookieJar()
+	opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
+	
+	soup = cook_soup(opener, website)
+
+
+	# Search for news articles
+	
+	"""
+	We want URLs with classes:
+	mod modA modPremium smallImage
+	mod modA modPremium smallImage
+	mod modA modClassic
+	mod modA modClassic
+	
+	We don't want URLs with classes:
+	mod modD modMini
+	mod modA
+	"""		
+		
+	news = soup.find_all(attrs={"class" : 
+			re.compile(r"modClassic|modPremium|modB")})
+
+	print("Opening", len(news), "articles on", website, "|", today)
+	
+	# Navigate through the document and extract the urls to the 
+	# articles wich will be stored in "urls"
+	urls = []
+	for article in news:
+		teasers = article.find_all(attrs={'class' : "teaser"})
+		not_lower_box = len(teasers) == 1
+		for teaser in teasers:
+			headlines = teaser.find_all('a')
+			if not_lower_box:
+				headlines = headlines[:1]
+			for headline in headlines:
+				if headline.has_attr("class") and \
+					"icon" in headline["class"]:
+					continue
+				url = headline['href']
+				if url.startswith("/") and not url in urls:
+					urls.append(url)
+					
+					
+	print()
+	print(bcolors.BOLD_SEQ + " videos | audios | Title" + bcolors.ENDC)
+	print("--------|--------|---------------")
+	
+	# Now look on each page if video or audio files are present
+	for url in urls:
+		
+		name = url.split("/")[-1]
+		general_topic = re.sub(c.URL_PATTERN, "", name) 
+		dir = location + general_topic + "/"
+		mkdir(dir)
+		
+		soup = cook_soup(opener, website + url, dir, name)
+			
+		videos = soup.find_all(attrs={'href': c.VIDEO_FILE_PATTERN})
+		audios = soup.find_all(attrs={'href': c.AUDIO_FILE_PATTERN})
+		
+		title = soup.find("title").get_text().split(" | ")[0]
+		if len(videos) + len(audios) == 0:
+			print("%s   ~0~  |   ~0~  | ~%s%s" %
+				  (bcolors.FAIL, title, bcolors.ENDC))
+		else:
+			print("   %2d   |   %2d   |  %s" % 
+				(len(videos), len(audios),
+				 soup.find("title").get_text().split(" | ")[0]))
+		
+		# Insert the found media files into their corresponding arrays
+		
+		media_url = videos + audios
+		
+		
+		for m in media_url:
+			m_url = m["href"]
+			file = m_url.split("/")[-1]
+			prefix = file[:2]
+			key = general_topic + file[3:]
+			if key not in medias:
+				count[prefix] += 1
+				time = ("%s.%s.%s %s:%s" %
+					    (file[9:11], file[7:9], file[3:7], file[12:14], 
+					     file[14:16]))
+				medias[key] = (dir, file, m_url, 
+							   "%s: %s (%s)" % (time, title, prefix))
+	
+	
+	# We will prepare a command (that will be executed via os.system)
+	# in this string
+	
+	# At first we are going to start vlc with a delay of 1 second, so
+	# the file download can already start in the background. The output
+	# vlc is sent to /dev/null so it doesn't interfere with the wget 
+	# output
+	fetch_command = "sleep 1 && vlc \"" + playlist_file + \
+		"\" > /dev/null 2>&1 > /dev/null & "
+	
+	print("--------|--------|---------------")
+	print("   %2d   |   %2d   | will be downloaded..." % 
+		  (count[c.VIDEO_PREFIX], count[c.AUDIO_PREFIX]))
+	
+	# Add for all video and audio files that are not present in the 
+	# filesystem an entry in the plylist and a call to wget, so it will 
+	# be downloaded
+	keys = sorted(medias.keys())
+	for key in keys:
+		e = medias[key]
+		dir = e[0]
+		file = e[1]
+		url = e[2]
+		title = e[3]
+		path = dir + file
+		if not os.path.exists(path):
+			if playlist_type == 'm3u':
+				playlist.write("#EXTINF:,,%s\n" % title)
+			playlist.write(path + "\n")
+			if tool == 'curl':
+				fetch_command += ("cd %s && curl %s -o %s 2>&1 | grep -v "
+								  "Total && " % (dir, url, file))
+			elif tool == 'wget':
+				fetch_command += ("cd %s && wget %s -O %s 2>&1 | grep -v "
+								  "Total && " % (dir, url, file))
+
+	playlist.close()
+	
+	os.system(fetch_command[:-3])
+	
+	return
 
 if __name__ == '__main__':
 	print(bcolors.BOLD_SEQ + "Media Scraper for tagesschau.de" +
@@ -353,9 +368,7 @@ if __name__ == '__main__':
 		bcolors.ENDC)
 	print()
 	
-	args = parse_args()
+	args = setup()
 	
-	headers = {'User-Agent': args.ua}
-	
-	main(args.video, args.audio, args.dir, args.age, args.player, 
-		 args.playlist, args.tool, headers, args.website)
+	main(args.dir, args.age, args.player, args.playlist, args.tool, 
+		 args.website)
