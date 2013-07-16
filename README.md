@@ -43,12 +43,12 @@ v Do not split up in subfolders by date anymore to avoid downloading same files 
 v Set track name in playlist as website title
 v Download to same directory per topic (cut off numbers at the end)
 - Command line options / settings file
--- Help
--- Audio/Video quality
--- Directory for download (default: Save in downloads folder)
--- Media Player
--- Download manager
--- Max age of files
+- - Help
+- - Audio/Video quality
+- - Directory for download (default: Save in downloads folder)
+- - Media Player
+- - Download manager
+- - Max age of files
 x Sort playlist by general article topic > time
 - Format code
 -- Consistently sort video stuff before audio stuff
