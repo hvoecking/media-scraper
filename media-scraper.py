@@ -369,7 +369,7 @@ def main(location, age, player, playlist_type, tool, website):
 					    (file[9:11], file[7:9], file[3:7], file[12:14], 
 					     file[14:16]))
 				medias[key] = (dir, file, m_url,
-							   "%s: %s (%s)" % (time, title, prefix),
+							   "(%s) %s: %s" % (prefix, time, title),
 							   general_topic)
 			else:
 				duplicates += 1
@@ -408,6 +408,7 @@ def main(location, age, player, playlist_type, tool, website):
 	# Sort the media keys to be grouped by topic	  
 	sorted_medias = {}
 	for key in medias.keys():
+		general_topic = medias[key][4]
 		sorted_medias[general_topic + key] = medias[key]
 		
 	keys = sorted(sorted_medias.keys())
