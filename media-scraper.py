@@ -443,7 +443,7 @@ def main(location, age, player, playlist_type, tool, website):
 	
 	command = ''.join(cmd) + "echo done"
 	
-	#os.system(command)
+	os.system(command)
 	
 	return
 
