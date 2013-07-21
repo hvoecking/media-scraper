@@ -48,6 +48,8 @@ class bcolors:
 
 
 def parse_args():
+	NYI = "\nNOT YET IMPLEMENTED"
+	
 	parser = argparse.ArgumentParser()
 							 
 	parser.add_argument("-v, --video-quality",
@@ -73,27 +75,52 @@ def parse_args():
 						help="The directory to which the files should "
 							 "be downloaded.")
 							 
-	parser.add_argument("-f, --file-age",
-						dest='age',
-						default=0,
-						help="The maximum number of days since the "
-							 "file has been published. Use 0 for "
-							 "unlimited.")
-							 
 	parser.add_argument("-p, --player",
 						dest='player',
 						default="vlc",
 						help="The media player which will be called "
 							 "to open the generated playlist.")
 							 
-	parser.add_argument("-l, --playlist-format",
+	parser.add_argument("-f, --file-age",
+						dest='age',
+						default=0,
+						help="The maximum number of days since the "
+							 "file has been published. Use 0 for "
+							 "unlimited." + NYI)
+							 
+	parser.add_argument("--append",
+						choices=[True, False],
+						dest='append',
+						default=True,
+						help="Whether the files downloaded in this "
+						     "session should be appended to the "
+						     "previous playlist." + NYI)
+						     
+	parser.add_argument("--cache-age",
+						dest='c_age',
+						default=0,
+						help="Files with an age greater than the "
+							 "specified number of days will be "
+							 "deleted. The default is 0, which means "
+							 "no means there is no age limit." + NYI)
+						     
+	parser.add_argument("--cache-size",
+						dest='c_size',
+						default=0,
+						help="The cache size specified in megabytes. "
+							 "If this size is exceeded files will be "
+							 "removed in chronological order. The "
+							 "default is 0, which means: thee is no "
+							 "size limit." + NYI)
+							 
+	parser.add_argument("---playlist-format",
 						dest='playlist',
 						default="m3u",
 						choices={"m3u"},
 						help="The format of the playlist, currently "
 							 "only m3u is supported")
 							 
-	parser.add_argument("-t, --download-tool",
+	parser.add_argument("--download-tool",
 						choices={"curl","wget"},
 						dest='tool',
 						default="curl",
@@ -115,10 +142,28 @@ def parse_args():
 						help="The website where to scrape. Currently "
 							 "only tagesschau.de is supported.")
 							 
-	return parser.parse_args()
+	args = parser.parse_args()
+	
+	args.dir += "/"
+	
+	return args
 	
 
 def setup():
+	
+	c.TEXT_COLORS = {\
+		"   " : (bcolors.ENDC, bcolors.ENDC, bcolors.ENDC), \
+		"** " : (bcolors.OKBLUE, bcolors.OKBLUE, bcolors.OKBLUE), \
+		"**~" : (bcolors.OKBLUE, bcolors.OKBLUE, bcolors.ENDC), \
+		"  ~" : (bcolors.FAIL, bcolors.FAIL, bcolors.FAIL), \
+		" * " : (bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC), \
+		" *~" : (bcolors.ENDC, bcolors.OKBLUE, bcolors.OKBLUE), \
+		"*  " : (bcolors.OKBLUE, bcolors.ENDC, bcolors.ENDC), \
+		"* ~" : (bcolors.OKBLUE, bcolors.ENDC, bcolors.OKBLUE) \
+	}
+
+	c.PREFIX_TYPE = { " " : r"%2d", "*" : r"*%d", "-" : r"-%d" }
+
 	"""
 	Style of video URLs:
 
@@ -132,7 +177,7 @@ def setup():
 		video/2013/0526/TV-20130526-2257-3401.webl.h264.mp4
 	"""
 
-	c.VIDEO_PREFIX = 'TV'
+	c.PV = 'TV'
 
 	c.VIDEO_QUALITIES = {
 		'mobil' : "podm.h264.mp4",
@@ -148,7 +193,7 @@ def setup():
 	http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.ogg
 	"""
 
-	c.AUDIO_PREFIX = 'AU'
+	c.PA = 'AU'
 
 	c.AUDIO_QUALITIES = {
 		'mp3' : "mp3",
@@ -158,7 +203,6 @@ def setup():
 	
 	
 	args = parse_args()
-	args.dir += "/"
 	
 	
 	c.HEADERS = {'User-Agent': args.ua}
@@ -166,18 +210,17 @@ def setup():
 	
 	c.VIDEO_FILE_PATTERN = re.compile(r"http://download\.media\." + 
 		"tagesschau\.de/video/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
-		(c.VIDEO_PREFIX, c.VIDEO_QUALITIES[args.video]))
+		(c.PV, c.VIDEO_QUALITIES[args.video]))
 	
 	c.AUDIO_FILE_PATTERN = re.compile(r"http://media\.tagesschau\.de/"
 		"audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
-		(c.AUDIO_PREFIX, c.AUDIO_QUALITIES[args.audio]))
+		(c.PA, c.AUDIO_QUALITIES[args.audio]))
 		
 		
 	
 	print("Video quality: ", bcolors.OKBLUE, args.video, bcolors.ENDC)
 	print("Audio quality: ", bcolors.OKBLUE, args.audio, bcolors.ENDC)
-	print("Downloading to:", bcolors.OKBLUE, args.dir, \
-		bcolors.ENDC)
+	print("Downloading to:", bcolors.OKBLUE, args.dir, bcolors.ENDC)
 	print()
 	
 	return args
@@ -208,9 +251,23 @@ def cook_soup(opener, url, dir=None, name=None, data=None):
 	
 def create_counter():
 	counter = {}
-	counter[c.VIDEO_PREFIX] = 0
-	counter[c.AUDIO_PREFIX] = 0
+	counter[c.PV] = 0
+	counter[c.PA] = 0
 	return counter
+
+def print_table_row(videos, audios, title,
+					v_prefix=" ", a_prefix=" ",
+					t_prefix=" "):
+						
+	v_color, a_color, t_color = c.TEXT_COLORS[v_prefix + a_prefix + t_prefix]
+	
+	v_str = str(c.PREFIX_TYPE[v_prefix]) % videos
+	a_str = str(c.PREFIX_TYPE[a_prefix]) % audios
+	string = ("%s  %s  %s|%s  %s   %s|%s %s%s%s" % 
+			  (v_color, v_str, bcolors.ENDC,
+			   a_color, a_str, bcolors.ENDC,
+			   t_color, t_prefix, title, bcolors.ENDC))
+	print (string)
 
 def main(location, age, player, playlist_type, tool, website):	
 	
@@ -226,6 +283,7 @@ def main(location, age, player, playlist_type, tool, website):
 	medias = {}
 	
 	count = create_counter()
+	duplicates = 0
 
 	# Prepare the opener
 	cj = http.cookiejar.CookieJar()
@@ -273,8 +331,11 @@ def main(location, age, player, playlist_type, tool, website):
 					
 					
 	print()
-	print(bcolors.BOLD_SEQ + " videos | audios | Title" + bcolors.ENDC)
-	print("--------|--------|---------------")
+	print("%svideo %s| %saudio %s|%s Title%s" %
+		  (bcolors.BOLD_SEQ, bcolors.ENDC, 
+		   bcolors.BOLD_SEQ, bcolors.ENDC, 
+		   bcolors.BOLD_SEQ, bcolors.ENDC))
+	print("------|-------|---------------")
 	
 	# Now look on each page if video or audio files are present
 	for url in urls:
@@ -295,7 +356,7 @@ def main(location, age, player, playlist_type, tool, website):
 		
 		media_url = videos + audios
 		
-		accepted = copy.copy(count)
+		before = copy.copy(count)
 		
 		for m in media_url:
 			m_url = m['href']
@@ -310,38 +371,21 @@ def main(location, age, player, playlist_type, tool, website):
 				medias[key] = (dir, file, m_url,
 							   "%s: %s (%s)" % (time, title, prefix),
 							   general_topic)
-							   
-		if len(videos) + len(audios) == 0:
-			print("%s   -0-  |   -0-  | ~%s%s" %
-				  (bcolors.FAIL, title, bcolors.ENDC))
-		elif accepted == count:
-			string = ""
-			if len(videos) == 0:
-				string += "    0   "
 			else:
-				string += ("%s   (%d)  %s" % 
-						   (bcolors.OKBLUE, len(videos), bcolors.ENDC))
-			string += "|"
-			if len(audios) == 0:
-				string += "    0   "
-			else:
-				string += ("%s   (%d)  %s" % 
-						   (bcolors.OKBLUE, len(audios), bcolors.ENDC))
-			string += "|%s ~%s%s" %  (bcolors.OKBLUE, title, bcolors.ENDC)
-			print (string)
-		elif (len(videos) != 0 and 
-		      accepted[c.VIDEO_PREFIX] == count[c.VIDEO_PREFIX]):
-			print("%s   (%d)  %s|   %2d   |  %s" % 
-				  (bcolors.OKBLUE, len(videos), bcolors.ENDC,
-				   len(audios), title))
-		elif (len(audios) != 0 and 
-		      accepted[c.AUDIO_PREFIX] == count[c.AUDIO_PREFIX]):
-			print("   %2d   |%s   (%d)  %s|  %s" % 
-				  (len(videos), bcolors.OKBLUE, len(audios),
-				   bcolors.ENDC, title))
+				duplicates += 1
+							
+		len_v = len(videos)
+		count_v = count[c.PV] - before[c.PV]
+		len_a = len(audios)   
+		count_a = count[c.PA] - before[c.PA]
+		
+		if len_v + len_a == 0:
+			print_table_row(len_v, len_a, title, " ", " ", "~")
 		else:
-			print("   %2d   |   %2d   |  %s" % 
-				  (len(videos), len(audios), title))
+			pv = "*" if len_v != count_v else " "
+			pa = "*" if len_a != count_a else " "
+			pt = "~" if len_a * len_v != 0 and before == count else " "
+			print_table_row(count_v, count_a, title, pv, pa, pt)
 	
 	# We will prepare a command (that will be executed via os.system)
 	# in this string
@@ -353,9 +397,13 @@ def main(location, age, player, playlist_type, tool, website):
 	cmd = ["sleep 1 && vlc \"%s\" > /dev/null 2>&1 > /dev/null & " % 
 		  playlist_file]
 	
-	print("--------|--------|---------------")
-	print("   %2d   |   %2d   | will be downloaded..." % 
-		  (count[c.VIDEO_PREFIX], count[c.AUDIO_PREFIX]))
+	print("------|-------|---------------")
+	print_table_row(count[c.PV], count[c.PA], "will be downloaded...");
+	if duplicates != 0:
+		print("%s* %d files have been skipped because they were "
+			  "duplicates...%s" % 
+			  (bcolors.OKBLUE, duplicates, bcolors.ENDC))
+		  
 	
 	# Sort the media keys to be grouped by topic	  
 	sorted_medias = {}
@@ -394,7 +442,7 @@ def main(location, age, player, playlist_type, tool, website):
 	
 	command = ''.join(cmd) + "echo done"
 	
-	os.system(command)
+	#os.system(command)
 	
 	return
 
