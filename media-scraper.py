@@ -369,7 +369,8 @@ def main(location, age, player, playlist_type, tool, website):
 					    (file[9:11], file[7:9], file[3:7], file[12:14], 
 					     file[14:16]))
 				medias[key] = (dir, file, m_url,
-							   "(%s) %s: %s" % (prefix, time, title),
+							   "(%s) %s: %s" % 
+							   (prefix, time, title),
 							   general_topic)
 			else:
 				duplicates += 1
@@ -425,7 +426,8 @@ def main(location, age, player, playlist_type, tool, website):
 		title = e[3]
 		path = dir + file
 		if playlist_type == 'm3u':
-			playlist.write("#EXTINF:,,%s\n" % title)
+			escaped_title = title.replace("-", "‑")
+			playlist.write("#EXTINF:,,%s\n" % escaped_title)
 		playlist.write(path + "\n")
 		option = ""
 		grep = ""
