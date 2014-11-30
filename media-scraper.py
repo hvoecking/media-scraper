@@ -5,11 +5,7 @@
 #  
 #  Copyright 2013 Heye Vöcking <heye.voecking at gmail.com>
 #    
-#  This program is distributed WITHOUT ANY WARRANTY!
-#  I am happy if you want to use my code (or parts of it) in your 
-#  project. So if you do, please contact me first before publishing
-#  your code!
-#  
+#  This program is distributed under the terms of the MIT License
 #  
 
 
