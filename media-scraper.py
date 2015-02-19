@@ -5,9 +5,9 @@
 #  
 #  Copyright 2013 Heye Vöcking <heye.voecking at gmail.com>
 #    
-#  This program is distributed under the terms of the MIT License
-#  
-
+#  This program is distributed under the terms of a slightly modified version
+#  of the BSD License, please see the LICENSE.md file.
+#
 
 import os
 import re
