@@ -16,7 +16,6 @@ import copy
 import argparse
 from datetime import date
 
-import http.cookiejar
 import urllib.parse
 import urllib.error
 import urllib.request
@@ -282,9 +281,8 @@ def main(location, age, player, playlist_type, tool, website):
 	duplicates = 0
 
 	# Prepare the opener
-	cj = http.cookiejar.CookieJar()
-	opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(cj))
-	
+	opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(None))
+
 	soup = cook_soup(opener, website)
 
 
