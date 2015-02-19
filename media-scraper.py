@@ -336,6 +336,10 @@ def main(location, age, player, playlist_type, tool, website):
 	# Now look on each page if video or audio files are present
 	for url in urls:
 		
+		if not url.endswith(".html"):
+			print ("Skipping non-html document, with url", url)
+			continue
+
 		name = url.split("/")[-1]
 		general_topic = re.sub(c.URL_PATTERN, "", name) 
 		dir = location + general_topic + "/"
