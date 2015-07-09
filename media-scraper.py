@@ -130,11 +130,11 @@ def parse_args():
 						dest='ua',
 						default=default_ua,
 						help="The user agent to be used.")
-						
-	parser.add_argument("-w, --website",
-						dest='website',
-						default="http://www.tagesschau.de",
-						help="The website where to scrape. Currently "
+
+	parser.add_argument("--feed",
+						dest='feed',
+						default="http://www.tagesschau.de/xml/atom/",
+						help="The feed where to scrape. Currently "
 							 "only tagesschau.de is supported.")
 
 	args = parser.parse_args()
@@ -264,8 +264,7 @@ def print_table_row(videos, audios, title,
 			   t_color, t_prefix, title, bcolors.ENDC))
 	print (string)
 
-def main(location, age, player, playlist_type, tool, website):	
-	
+def main(location, age, player, playlist_type, tool, feed):
 	today = str(date.today())
 	mkdir(location)
 
@@ -283,47 +282,13 @@ def main(location, age, player, playlist_type, tool, website):
 	# Prepare the opener
 	opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(None))
 
-	soup = cook_soup(opener, website)
+	soup = cook_soup(opener, feed)
 
-
-	# Search for news articles
-	
-	"""
-	We want URLs with classes:
-	mod modA modPremium smallImage
-	mod modA modPremium smallImage
-	mod modA modClassic
-	mod modA modClassic
-	
-	We don't want URLs with classes:
-	mod modD modMini
-	mod modA
-	"""		
-		
-	news = soup.find_all(attrs={'class' : 
-			re.compile(r"modClassic|modPremium|modB")})
-
-	print("Opening", len(news), "articles on", website, "|", today)
-	
-	# Navigate through the document and extract the urls to the 
-	# articles wich will be stored in "urls"
 	urls = []
-	for article in news:
-		teasers = article.find_all(attrs={'class' : "teaser"})
-		not_lower_box = len(teasers) == 1
-		for teaser in teasers:
-			headlines = teaser.find_all('a')
-			if not_lower_box:
-				headlines = headlines[:1]
-			for headline in headlines:
-				if headline.has_attr('class') and \
-					'icon' in headline['class']:
-					continue
-				url = headline['href']
-				if url.startswith("/") and not url in urls:
-					urls.append(url)
-					
-					
+	for entry in soup.find_all('entry'):
+		urls.append(entry.link['href'])
+
+	print("Opening", len(urls), "articles on", feed, "|", today)
 	print()
 	print("%svideo %s| %saudio %s|%s Title%s" %
 		  (bcolors.BOLD_SEQ, bcolors.ENDC,
@@ -342,9 +307,9 @@ def main(location, age, player, playlist_type, tool, website):
 		general_topic = re.sub(c.URL_PATTERN, "", name)
 		dir = location + general_topic + "/"
 		mkdir(dir)
-		
-		soup = cook_soup(opener, website + url, dir, name)
-			
+
+		soup = cook_soup(opener, url, dir, name)
+
 		videos = soup.find_all(attrs={'href': c.VIDEO_FILE_PATTERN})
 		audios = soup.find_all(attrs={'href': c.AUDIO_FILE_PATTERN})
 
@@ -460,6 +425,6 @@ if __name__ == '__main__':
 	print()
 
 	args = setup()
-	
-	main(args.dir, args.age, args.player, args.playlist, args.tool, 
-		 args.website)
+
+	main(args.dir, args.age, args.player, args.playlist, args.tool,
+		 args.feed)
