@@ -253,7 +253,7 @@ def main(location, age, player, tool, feed):
 	mkdir(location)
 
 	playlist_file = location + today + "." + c.PLAYLIST_TYPE
-	playlist = open(playlist_file, 'w'):
+	playlist = open(playlist_file, 'w')
 	playlist.write("#EXTM3U\n")
 
 	# Will hold all media urls with their attributes
