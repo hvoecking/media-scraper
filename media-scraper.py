@@ -225,8 +225,6 @@ def mkdir(directory):
 	if not os.path.exists(directory):
 		os.makedirs(directory)
 
-
-
 # Saves the html (as string) to a file in dir
 def save_as(html, dir, name):
 	f = open(dir + name, 'w')
