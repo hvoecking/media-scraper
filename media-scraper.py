@@ -108,13 +108,6 @@ def parse_args():
 							 "default is 0, which means: thee is no "
 							 "size limit." + NYI)
 
-	parser.add_argument("---playlist-format",
-						dest='playlist',
-						default="m3u",
-						choices={"m3u"},
-						help="The format of the playlist, currently "
-							 "only m3u is supported")
-
 	parser.add_argument("--download-tool",
 						choices={"curl","wget"},
 						dest='tool',
@@ -180,6 +173,7 @@ def setup():
 		'webm' : "webm.webm",
 		'hoch' : "webl.h264.mp4"}
 
+	c.PLAYLIST_TYPE = "m3u"
 
 	"""
 	Style of audio URLs:
@@ -262,14 +256,13 @@ def print_table_row(videos, audios, title,
 			   t_color, t_prefix, title, bcolors.ENDC))
 	print (string)
 
-def main(location, age, player, playlist_type, tool, feed):
+def main(location, age, player, tool, feed):
 	today = str(date.today())
 	mkdir(location)
 
-	playlist_file = location + today + "." + playlist_type
-	playlist = open(playlist_file, 'w')
-	if playlist_type == 'm3u':
-		playlist.write("#EXTM3U\n")
+	playlist_file = location + today + "." + c.PLAYLIST_TYPE
+	playlist = open(playlist_file, 'w'):
+	playlist.write("#EXTM3U\n")
 
 	# Will hold all media urls with their attributes
 	medias = {}
@@ -386,9 +379,8 @@ def main(location, age, player, playlist_type, tool, feed):
 		url = e[2]
 		title = e[3]
 		path = dir + file
-		if playlist_type == 'm3u':
-			escaped_title = title.replace("-", "‑")
-			playlist.write("#EXTINF:,,%s\n" % escaped_title)
+		escaped_title = title.replace("-", "‑")
+		playlist.write("#EXTINF:,,%s\n" % escaped_title)
 		playlist.write(path + "\n")
 		option = ""
 		grep = ""
@@ -424,5 +416,5 @@ if __name__ == '__main__':
 
 	args = setup()
 
-	main(args.dir, args.age, args.player, args.playlist, args.tool,
+	main(args.dir, args.age, args.player, args.tool,
 		 args.feed)
