@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  media-scraper.py
-#
-#  Copyright 2013 Heye Vöcking <heye.voecking at gmail.com>
+#  Copyright 2013 Heye Vöcking <heye.voecking+tagesschau-downloader at gmail.com>
 #
 #  This program is distributed under the terms of a slightly modified version
 #  of the BSD License, please see the LICENSE.md file.
@@ -404,7 +402,7 @@ if __name__ == '__main__':
 		bcolors.ENDC)
 	print(" (c) by" + bcolors.BOLD_SEQ + " Heye Voecking " +
 		bcolors.ENDC + bcolors.OKBLUE + \
-		"<heye.voecking+mediascraper[at]gmail[dot]com>" + bcolors.ENDC)
+		"<heye.voecking+tagesschau-downloader[at]gmail[dot]com>" + bcolors.ENDC)
 	print()
 	print(bcolors.FAIL + \
 		"This program is distributed WITHOUT ANY WARRANTY!" +
