@@ -124,12 +124,6 @@ def parse_args():
 						default=default_ua,
 						help="The user agent to be used.")
 
-	parser.add_argument("--feed",
-						dest='feed',
-						default="http://www.tagesschau.de/xml/atom/",
-						help="The feed where to scrape. Currently "
-							 "only tagesschau.de is supported.")
-
 	args = parser.parse_args()
 
 	args.dir += "/"
@@ -417,4 +411,4 @@ if __name__ == '__main__':
 	args = setup()
 
 	main(args.dir, args.age, args.player, args.tool,
-		 args.feed)
+		 "http://www.tagesschau.de/xml/atom/")
