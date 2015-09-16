@@ -287,6 +287,9 @@ def main(location, age, player, tool, feed):
 		if not url.endswith(".html"):
 			print ("Skipping non-html document, with url", url)
 			continue
+		if not url.startswith("http://www.tagesschau.de"):
+			print ("Skipping non-tagesschau url", url)
+			continue
 
 		name = url.split("/")[-1]
 		general_topic = re.sub(c.URL_PATTERN, "", name)
