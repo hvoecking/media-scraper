@@ -314,7 +314,7 @@ def main(location, age, player, tool, feed):
 			file = m_url.split("/")[-1]
 			prefix = file[:2]
 			key = file[3:]
-			if not (key in medias or os.path.exists(dir + file)):
+			if not (key in medias or (os.path.exists(dir + file) and os.path.getsize(dir + file) > 0)):
 				count[prefix] += 1
 				time = ("%s.%s.%s %s:%s" %
 					    (file[9:11], file[7:9], file[3:7], file[12:14],
