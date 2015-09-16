@@ -1,25 +1,16 @@
-Media Scraper
+Tagesschau Downloader
 =============
 
-Python script for playing all media on tagesschau.de with a single click
+Python script for playing and downloading all media on tagesschau.de with a single click.
 
 
-I always imagined how nice it would be, if I got up and only needed a single click to enjoy my news during breakfast.
-Well the time has come that my dream came true.
-If you want, feel free to join me :)
-
+I always imagined how nice it would be, if I got up and only needed a single click to enjoy my news during breakfast. And finally I came around to do it.
 
 Installation
 ============
 
 You might need to download urllib, cookielib and/or BeautifulSoup.
 You can do this with easy_install and pip.
-
-Run
-===
-
-Run this code with python3, the media-scraper-p2.py file is built for python2
-- currently only tested on Linux
 
 Download
 ========
