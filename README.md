@@ -9,8 +9,16 @@ I always imagined how nice it would be, if I got up and only needed a single cli
 Installation
 ============
 
-You might need to download urllib, cookielib and/or BeautifulSoup.
-You can do this with easy_install and pip.
+Example for Ubuntu:
+```
+git clone https://github.com/hvoecking/tagesschau-downloader.git
+cd tagesschau-downloader
+# install pip3 if not already present, eg. sudo apt-get install python3-pip
+sudo pip3 install virtualenv
+virtualenv venv
+source venv/bin/activate
+python3 tagesschau-downloader.py [--help]
+```
 
 Download
 ========

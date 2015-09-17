@@ -226,7 +226,7 @@ def cook_soup(opener, url, dir=None, name=None, data=None):
 	if dir is not None and name is not None:
 		save_as(html, dir, name)
 
-	return BeautifulSoup(html)
+	return BeautifulSoup(html, "html.parser")
 
 def create_counter():
 	counter = {}
