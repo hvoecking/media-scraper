@@ -47,7 +47,7 @@ def parse_args():
 
 	parser.add_argument("-v, --video-quality",
 						choices=c.VIDEO_QUALITIES.keys(),
-						default="webm",
+						default="l",
 						dest='video',
 					    help="There are %d different video qualities "
 							 "available for download: %s" %
@@ -146,32 +146,33 @@ def setup():
 
 	"""
 	Style of video URLs:
-
-	http://download.media.tagesschau.de/
-		video/2013/0526/TV-20130526-2257-3401.podm.h264.mp4
-	http://download.media.tagesschau.de/
-		video/2013/0526/TV-20130526-2257-3401.webm.h264.mp4
-	http://download.media.tagesschau.de/
-		video/2013/0526/TV-20130526-2257-3401.webm.webm
-	http://download.media.tagesschau.de/
-		video/2013/0526/TV-20130526-2257-3401.webl.h264.mp4
+        //download.media.tagesschau.de/
+                video/2018/1012/TV-20181012-2322-5601.websm.h264.mp4
+        //download.media.tagesschau.de/
+                video/2018/1012/TV-20181012-2322-5601.webm.h264.mp4
+        //download.media.tagesschau.de/
+                video/2018/1012/TV-20181012-2322-5601.webl.h264.mp4
+        //download.media.tagesschau.de/
+                video/2021/0127/TV-20210127-1858-5700.webxl.h264.mp4
+        //download.media.tagesschau.de/
+                video/2018/1012/TV-20181012-2322-5601.webxl.h264.mp4
 	"""
 
 	c.PV = 'TV'
 
 	c.VIDEO_QUALITIES = {
-		'mobil' : "podm.h264.mp4",
-		'mittel' : "webm.h264.mp4",
-		'webm' : "webm.webm",
-		'hoch' : "webl.h264.mp4"}
+		'sm' : "websm.h264.mp4",
+		'm' : "webm.h264.mp4",
+		'l' : "webl.h264.mp4",
+		'xl' : "webxl.h264.mp4"}
 
 	c.PLAYLIST_TYPE = "m3u"
 
 	"""
 	Style of audio URLs:
 
-	http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.mp3
-	http://media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.ogg
+	//media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.mp3
+	//media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.ogg
 	"""
 
 	c.PA = 'AU'
@@ -189,11 +190,11 @@ def setup():
 	c.HEADERS = {'User-Agent': args.ua}
 
 
-	c.VIDEO_FILE_PATTERN = re.compile(r"http://download\.media\." +
+	c.VIDEO_FILE_PATTERN = re.compile(r"//download\.media\." +
 		"tagesschau\.de/video/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
 		(c.PV, c.VIDEO_QUALITIES[args.video]))
 
-	c.AUDIO_FILE_PATTERN = re.compile(r"http://media\.tagesschau\.de/"
+	c.AUDIO_FILE_PATTERN = re.compile(r"//media\.tagesschau\.de/"
 		"audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s" %
 		(c.PA, c.AUDIO_QUALITIES[args.audio]))
 
@@ -285,7 +286,7 @@ def main(location, age, player, tool, feed):
 		if not url.endswith(".html"):
 			print ("Skipping non-html document, with url", url)
 			continue
-		if not url.startswith("http://www.tagesschau.de"):
+		if not url.startswith("https://www.tagesschau.de"):
 			print ("Skipping non-tagesschau url", url)
 			continue
 
@@ -309,6 +310,8 @@ def main(location, age, player, tool, feed):
 
 		for m in media_url:
 			m_url = m['href']
+			if not m_url.startswith("http"):
+				m_url = "https:" + m_url
 			file = m_url.split("/")[-1]
 			prefix = file[:2]
 			key = file[3:]
