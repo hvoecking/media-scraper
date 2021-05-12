@@ -13,11 +13,13 @@ import sys
 import copy
 import argparse
 from datetime import date
+import json
 
 import urllib.parse
 import urllib.error
 import urllib.request
 from bs4 import BeautifulSoup
+from html import unescape
 
 import const as c
 
@@ -223,7 +225,8 @@ def cook_soup(opener, url, dir=None, name=None, data=None):
 	request = urllib.request.Request(url, data, c.HEADERS)
 	response = opener.open(request)
 
-	html = response.read()
+	resp = response.read().decode('utf-8')
+	html = unescape(resp)
 	if dir is not None and name is not None:
 		save_as(html, dir, name)
 
@@ -294,11 +297,14 @@ def main(location, age, player, tool, feed):
 		general_topic = re.sub(c.URL_PATTERN, "", name)
 		dir = location + general_topic + "/"
 		mkdir(dir)
+		try:
+			soup = cook_soup(opener, url, dir, name)
+		except urllib.error.URLError as err:
+			print ("Failed to open '" + url + "':", err)
+			continue
 
-		soup = cook_soup(opener, url, dir, name)
-
-		videos = soup.find_all(attrs={'href': c.VIDEO_FILE_PATTERN})
-		audios = soup.find_all(attrs={'href': c.AUDIO_FILE_PATTERN})
+		videos = soup.find_all(attrs={'data-config': c.VIDEO_FILE_PATTERN})
+		audios = soup.find_all(attrs={'data-config': c.AUDIO_FILE_PATTERN})
 
 		title = soup.find('title').get_text().split(" | ")[0]
 
@@ -307,9 +313,8 @@ def main(location, age, player, tool, feed):
 		media_url = videos + audios
 
 		before = copy.copy(count)
-
 		for m in media_url:
-			m_url = m['href']
+			m_url = json.loads(m['data-config'])["mc"]["_mediaArray"][0]["_mediaStreamArray"][-1]["_stream"]
 			if not m_url.startswith("http"):
 				m_url = "https:" + m_url
 			file = m_url.split("/")[-1]
