@@ -411,7 +411,7 @@ if __name__ == "__main__":
     )
 
     AUDIO_FILE_PATTERN = re.compile(
-        r"//media\.tagesschau\.de/audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s"
+        r"//download\.media\.tagesschau\.de/audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s"
         % (PA, AUDIO_QUALITIES[args.audio])
     )
 
