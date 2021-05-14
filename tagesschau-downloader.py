@@ -41,22 +41,11 @@ TEXT_COLORS = {
 
 PREFIX_TYPE = {" ": r"%2d", "*": r"*%d", "-": r"-%d"}
 
-"""
-Style of video URLs:
-    //download.media.tagesschau.de/
-            video/2018/1012/TV-20181012-2322-5601.websm.h264.mp4
-    //download.media.tagesschau.de/
-            video/2018/1012/TV-20181012-2322-5601.webm.h264.mp4
-    //download.media.tagesschau.de/
-            video/2018/1012/TV-20181012-2322-5601.webl.h264.mp4
-    //download.media.tagesschau.de/
-            video/2021/0127/TV-20210127-1858-5700.webxl.h264.mp4
-    //download.media.tagesschau.de/
-            video/2018/1012/TV-20181012-2322-5601.webxl.h264.mp4
-"""
-
 PV = "TV"
+PA = "AU"
 
+URL_PATTERN = re.compile(r"\d*\.html")
+AUDIO_QUALITIES = {"mp3": "mp3", "ogg": "ogg"}
 VIDEO_QUALITIES = {
     "sm": "websm.h264.mp4",
     "m": "webm.h264.mp4",
@@ -65,19 +54,6 @@ VIDEO_QUALITIES = {
 }
 
 PLAYLIST_TYPE = "m3u"
-
-"""
-Style of audio URLs:
-
-//media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.mp3
-//media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.ogg
-"""
-
-PA = "AU"
-
-AUDIO_QUALITIES = {"mp3": "mp3", "ogg": "ogg"}
-
-URL_PATTERN = re.compile(r"\d*\.html")
 
 
 def compile_pattern(type, prefix, quality):
@@ -157,11 +133,7 @@ def parse_args():
         help="The user agent to be used.",
     )
 
-    args = parser.parse_args()
-
-    args.dir += "/"
-
-    return args
+    return parser.parse_args()
 
 
 # Create a directory if it doesn't exist
@@ -185,7 +157,6 @@ def cook_soup(opener, url, headers, dir=None, name=None, data=None):
 
 
 def print_table_row(videos, audios, title, v_prefix=" ", a_prefix=" ", t_prefix=" "):
-
     v_color, a_color, t_color = TEXT_COLORS[v_prefix + a_prefix + t_prefix]
 
     v_str = str(PREFIX_TYPE[v_prefix]) % videos
@@ -258,7 +229,6 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
         title = soup.find("title").get_text().split(" | ")[0]
 
         # Insert the found media files into their corresponding arrays
-
         media_url = videos + audios
 
         before = copy.copy(count)
@@ -346,12 +316,7 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
         cmd.append(f"cd {dir} && {tool} {url} {option} {file} 2>&1 | grep {grep} && ")
 
     playlist.close()
-
-    command = "".join(cmd) + "echo done"
-
-    os.system(command)
-
-    return
+    os.system("".join(cmd) + "echo done")
 
 
 if __name__ == "__main__":
@@ -370,7 +335,7 @@ if __name__ == "__main__":
     print()
 
     main(
-        args.dir,
+        args.dir + "/",
         args.tool,
         "http://www.tagesschau.de/xml/atom/",
         {"User-Agent": args.ua},
