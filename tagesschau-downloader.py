@@ -170,13 +170,6 @@ def mkdir(directory):
         os.makedirs(directory)
 
 
-# Saves the html (as string) to a file in dir
-def save_as(html, dir, name):
-    f = open(dir + name, "w")
-    f.write(str(html))
-    f.close()
-
-
 # Opens a url and returns it's page as a BeautifulSoup object
 def cook_soup(opener, url, headers, dir=None, name=None, data=None):
     request = urllib.request.Request(url, data, headers)
@@ -185,7 +178,8 @@ def cook_soup(opener, url, headers, dir=None, name=None, data=None):
     resp = response.read().decode("utf-8")
     html = unescape(resp)
     if dir is not None and name is not None:
-        save_as(html, dir, name)
+        with open(dir + name, "w") as f:
+            f.write(str(html))
 
     return BeautifulSoup(html, "html.parser")
 
