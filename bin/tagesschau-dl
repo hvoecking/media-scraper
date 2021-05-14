@@ -1,0 +1,6 @@
+#!/usr/bin/env python
+
+import tagesschau_dl
+
+if __name__ == '__main__':
+    tagesschau_dl.main()

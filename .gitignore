@@ -1,2 +1,4 @@
 __pycache__/
 venv/
+/super-linter.log
+tagesschau-dl
