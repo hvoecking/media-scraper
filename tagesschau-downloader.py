@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#  Copyright 2013 Heye Vöcking <heye.voecking+tagesschau-downloader at gmail.com>
+#  Copyright 2013 Heye Vöcking <heye.voecking at gmail.com>
 #
 #  This program is distributed under the terms of a slightly modified version
 #  of the BSD License, please see the LICENSE.md file.
@@ -20,25 +20,13 @@ from html import unescape
 
 from bs4 import BeautifulSoup
 
-
-# From
-#  http://stackoverflow.com/questions/287871/print-in-terminal-with-colors-using-python
-class bcolors:
-    BOLD_SEQ = "\033[1m"
-    HEADER = "\033[95m"
-    OKBLUE = "\033[94m"
-    OKGREEN = "\033[92m"
-    WARNING = "\033[93m"
-    FAIL = "\033[91m"
-    ENDC = "\033[0m"
-
-    def disable(self):
-        self.HEADER = ""
-        self.OKBLUE = ""
-        self.OKGREEN = ""
-        self.WARNING = ""
-        self.FAIL = ""
-        self.ENDC = ""
+BOLD = "\033[1m"
+HEADER = "\033[95m"
+BLUE = "\033[94m"
+GREEN = "\033[92m"
+YELLOW = "\033[93m"
+RED = "\033[91m"
+END = "\033[0m"
 
 
 def parse_args():
@@ -49,8 +37,12 @@ def parse_args():
         choices=VIDEO_QUALITIES.keys(),
         default="l",
         dest="video",
-        help="There are %d different video qualities "
-        "available for download: %s" % (len(VIDEO_QUALITIES), str(VIDEO_QUALITIES)),
+        help=" ".join(
+            [
+                f"There are {len(VIDEO_QUALITIES)} different video qualities available for",
+                f"download: {str(VIDEO_QUALITIES)}",
+            ]
+        ),
     )
 
     parser.add_argument(
@@ -58,22 +50,26 @@ def parse_args():
         choices=AUDIO_QUALITIES.keys(),
         default="mp3",
         dest="audio",
-        help="There are %d different audio qualities "
-        "available for download." % len(AUDIO_QUALITIES),
+        help=" ".join(
+            [
+                f"There are {len(AUDIO_QUALITIES)} different audio qualities available for",
+                "download.",
+            ]
+        ),
     )
 
     parser.add_argument(
         "-d, --download-directory",
         dest="dir",
         default="~/Downloads",
-        help="The directory to which the files should " "be downloaded.",
+        help="The directory to which the files should be downloaded.",
     )
 
     parser.add_argument(
         "-p, --player",
         dest="player",
         default="vlc",
-        help="The media player which will be called " "to open the generated playlist.",
+        help="The media player which will be called to open the generated playlist.",
     )
 
     parser.add_argument(
@@ -81,15 +77,20 @@ def parse_args():
         choices={"curl", "wget"},
         dest="tool",
         default="curl",
-        help="The command line tool used to download "
-        "the media files. Command line output "
-        "is optimized for curl.",
+        help=" ".join(
+            [
+                "The command line tool used to download the media files. Command line",
+                "output is optimized for curl.",
+            ]
+        ),
     )
 
-    default_ua = (
-        "Mozilla/5.0 (Windows; U; Windows NT 6.1; ru; "
-        "rv:1.9.2.3) Gecko/20100401 Firefox/4.0 "
-        "(.NET CLR 3.5.30729)"
+    default_ua = " ".join(
+        [
+            "Mozilla/5.0 (Windows; U; Windows NT 6.1; ru; rv:1.9.2.3)",
+            "Gecko/20100401",
+            "Firefox/4.0 (.NET CLR 3.5.30729)",
+        ]
     )
     parser.add_argument(
         "-u, --user-agent",
@@ -106,14 +107,14 @@ def parse_args():
 
 
 TEXT_COLORS = {
-    "   ": (bcolors.ENDC, bcolors.ENDC, bcolors.ENDC),
-    "** ": (bcolors.OKBLUE, bcolors.OKBLUE, bcolors.OKBLUE),
-    "**~": (bcolors.OKBLUE, bcolors.OKBLUE, bcolors.ENDC),
-    "  ~": (bcolors.FAIL, bcolors.FAIL, bcolors.FAIL),
-    " * ": (bcolors.ENDC, bcolors.OKBLUE, bcolors.ENDC),
-    " *~": (bcolors.ENDC, bcolors.OKBLUE, bcolors.OKBLUE),
-    "*  ": (bcolors.OKBLUE, bcolors.ENDC, bcolors.ENDC),
-    "* ~": (bcolors.OKBLUE, bcolors.ENDC, bcolors.OKBLUE),
+    "   ": (END, END, END),
+    "** ": (BLUE, BLUE, BLUE),
+    "**~": (BLUE, BLUE, END),
+    "  ~": (RED, RED, RED),
+    " * ": (END, BLUE, END),
+    " *~": (END, BLUE, BLUE),
+    "*  ": (BLUE, END, END),
+    "* ~": (BLUE, END, BLUE),
 }
 
 PREFIX_TYPE = {" ": r"%2d", "*": r"*%d", "-": r"-%d"}
@@ -196,19 +197,15 @@ def print_table_row(videos, audios, title, v_prefix=" ", a_prefix=" ", t_prefix=
 
     v_str = str(PREFIX_TYPE[v_prefix]) % videos
     a_str = str(PREFIX_TYPE[a_prefix]) % audios
-    string = "%s  %s  %s|%s  %s   %s|%s %s%s%s" % (
-        v_color,
-        v_str,
-        bcolors.ENDC,
-        a_color,
-        a_str,
-        bcolors.ENDC,
-        t_color,
-        t_prefix,
-        title,
-        bcolors.ENDC,
+    print(
+        "|".join(
+            [
+                f"{v_color}  {v_str}  {END}",
+                f"{a_color}  {a_str}   {END}",
+                f"{t_color} {t_prefix}{title}{END}",
+            ]
+        )
     )
-    print(string)
 
 
 def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
@@ -234,39 +231,29 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
     for entry in soup.find_all("entry"):
         urls.append(entry.link["href"])
 
-    print("Opening", len(urls), "articles on", feed, "|", today)
+    print(f"Opening {len(urls)} articles on {feed} | {today}")
     print()
-    print(
-        "%svideo %s| %saudio %s|%s Title%s"
-        % (
-            bcolors.BOLD_SEQ,
-            bcolors.ENDC,
-            bcolors.BOLD_SEQ,
-            bcolors.ENDC,
-            bcolors.BOLD_SEQ,
-            bcolors.ENDC,
-        )
-    )
+    print(f"{BOLD}video {END}| {BOLD}audio {END}|{BOLD} Title{END}")
     print("------|-------|---------------")
 
     # Now look on each page if video or audio files are present
     for url in urls:
 
         if not url.endswith(".html"):
-            print("Skipping non-html document, with url", url)
+            print(f"Skipping non-html document, with url {url}")
             continue
         if not url.startswith("https://www.tagesschau.de"):
-            print("Skipping non-tagesschau url", url)
+            print(f"Skipping non-tagesschau url {url}")
             continue
 
         name = url.split("/")[-1]
         general_topic = re.sub(URL_PATTERN, "", name)
-        dir = location + general_topic + "/"
+        dir = f"{location}{general_topic}/"
         mkdir(dir)
         try:
             soup = cook_soup(opener, url, headers, dir, name)
         except urllib.error.URLError as err:
-            print("Failed to open '" + url + "':", err)
+            print(f"Failed to open '{url}':{err}")
             continue
 
         videos = soup.find_all(attrs={"data-config": VIDEO_FILE_PATTERN})
@@ -288,27 +275,20 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
             file = m_url.split("/")[-1]
             prefix = file[:2]
             key = file[3:]
-            if not (
-                key in medias
-                or (os.path.exists(dir + file) and os.path.getsize(dir + file) > 0)
-            ):
-                count[prefix] += 1
-                time = "%s.%s.%s %s:%s" % (
-                    file[9:11],
-                    file[7:9],
-                    file[3:7],
-                    file[12:14],
-                    file[14:16],
-                )
-                medias[key] = (
-                    dir,
-                    file,
-                    m_url,
-                    "(%s) %s: %s" % (prefix, time, title),
-                    general_topic,
-                )
-            else:
+            path = dir + file
+            if key in medias or (os.path.exists(path) and os.path.getsize(path) > 0):
                 duplicates += 1
+                continue
+
+            count[prefix] += 1
+            time = f"{file[9:11]}.{file[7:9]}.{file[3:7]} {file[12:14]}:{file[14:16]}"
+            medias[key] = (
+                dir,
+                file,
+                m_url,
+                f"({prefix}) {time}: {title}",
+                general_topic,
+            )
 
         len_v = len(videos)
         count_v = count[PV] - before[PV]
@@ -330,15 +310,12 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
     # the file download can already start in the background. The output
     # vlc is sent to /dev/null so it doesn't interfere with the wget
     # output
-    cmd = ['sleep 1 && vlc "%s" > /dev/null 2>&1 > /dev/null & ' % playlist_file]
+    cmd = [f'sleep 1 && vlc "{playlist_file}" > /dev/null 2>&1 > /dev/null & ']
 
     print("------|-------|---------------")
     print_table_row(count[PV], count[PA], "will be downloaded...")
     if duplicates != 0:
-        print(
-            "%s* %d files have been skipped because they were "
-            "duplicates...%s" % (bcolors.OKBLUE, duplicates, bcolors.ENDC)
-        )
+        print(f"{BLUE}* {duplicates} duplicates skipped...{END}")
 
     # Sort the media keys to be grouped by topic
     sorted_medias = {}
@@ -360,7 +337,7 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
         title = e[3]
         path = dir + file
         escaped_title = title.replace("-", "‑")
-        playlist.write("#EXTINF:,,%s\n" % escaped_title)
+        playlist.write(f"#EXTINF:,,{escaped_title}\n")
         playlist.write(path + "\n")
         option = ""
         grep = ""
@@ -370,10 +347,7 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
         elif tool == "wget":
             option = "-O"
             grep = "saved"
-        cmd.append(
-            "cd %s && %s %s %s %s 2>&1 | grep %s && "
-            % (dir, tool, url, option, file, grep)
-        )
+        cmd.append(f"cd {dir} && {tool} {url} {option} {file} 2>&1 | grep {grep} && ")
 
     playlist.close()
 
@@ -385,39 +359,29 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
 
 
 if __name__ == "__main__":
-    print(bcolors.BOLD_SEQ + "Media Scraper for tagesschau.de" + bcolors.ENDC)
+    print(f"{BOLD}Media Scraper for tagesschau.de{END}")
     print(
-        " (c) by"
-        + bcolors.BOLD_SEQ
-        + " Heye Voecking "
-        + bcolors.ENDC
-        + bcolors.OKBLUE
-        + "<heye.voecking+tagesschau-downloader[at]gmail[dot]com>"
-        + bcolors.ENDC
+        f" (c) by{BOLD} Heye Voecking {END}{BLUE}<heye.voecking[at]gmail[dot]com>{END}"
     )
     print()
-    print(
-        bcolors.FAIL
-        + "This program is distributed WITHOUT ANY WARRANTY!"
-        + bcolors.ENDC
-    )
+    print(f"{RED}This program is distributed WITHOUT ANY WARRANTY!{END}")
     print()
 
     args = parse_args()
 
-    VIDEO_FILE_PATTERN = re.compile(
+    video_pattern = re.compile(
         r"//download\.media\.tagesschau\.de/video/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s"
         % (PV, VIDEO_QUALITIES[args.video])
     )
 
-    AUDIO_FILE_PATTERN = re.compile(
+    audio_pattern = re.compile(
         r"//download\.media\.tagesschau\.de/audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s"
         % (PA, AUDIO_QUALITIES[args.audio])
     )
 
-    print("Video quality: ", bcolors.OKBLUE, args.video, bcolors.ENDC)
-    print("Audio quality: ", bcolors.OKBLUE, args.audio, bcolors.ENDC)
-    print("Downloading to:", bcolors.OKBLUE, args.dir, bcolors.ENDC)
+    print(f"Video quality:  {BLUE}{args.video}{END}")
+    print(f"Audio quality:  {BLUE}{args.audio}{END}")
+    print(f"Downloading to: {BLUE}{args.dir}{END}")
     print()
 
     main(
@@ -425,6 +389,6 @@ if __name__ == "__main__":
         args.tool,
         "http://www.tagesschau.de/xml/atom/",
         {"User-Agent": args.ua},
-        VIDEO_FILE_PATTERN,
-        AUDIO_FILE_PATTERN,
+        video_pattern,
+        audio_pattern,
     )
