@@ -20,6 +20,10 @@ lint:
 	docker run -e RUN_LOCAL=true -v "$$PWD:/tmp/lint" github/super-linter
 .PHONY: lint ## Run GitHub's super-linter
 
+commitlint:
+	commitlint --from master --to HEAD
+.PHONY: commitlint ## Check if commits adhere to Standard Version style
+
 build: tagesschau-dl
 .PHONY: build ## Build the project
 
