@@ -184,13 +184,6 @@ def cook_soup(opener, url, headers, dir=None, name=None, data=None):
     return BeautifulSoup(html, "html.parser")
 
 
-def create_counter():
-    counter = {}
-    counter[PV] = 0
-    counter[PA] = 0
-    return counter
-
-
 def print_table_row(videos, audios, title, v_prefix=" ", a_prefix=" ", t_prefix=" "):
 
     v_color, a_color, t_color = TEXT_COLORS[v_prefix + a_prefix + t_prefix]
@@ -219,7 +212,10 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
     # Will hold all media urls with their attributes
     medias = {}
 
-    count = create_counter()
+    count = {
+        PV: 0,
+        PA: 0,
+    }
     duplicates = 0
 
     # Prepare the opener
