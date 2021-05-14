@@ -363,7 +363,7 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
 if __name__ == "__main__":
     args = parse_args()
 
-    print(f"{BOLD}Media Scraper for tagesschau.de{END}")
+    print(f"{BOLD}Downloader for tagesschau.de{END}")
     print(
         f" (c) by{BOLD} Heye Voecking {END}{BLUE}<heye.voecking[at]gmail[dot]com>{END}"
     )
