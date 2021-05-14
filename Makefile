@@ -24,6 +24,10 @@ commitlint:
 	commitlint --from master --to HEAD
 .PHONY: commitlint ## Check if commits adhere to Standard Version style
 
+release:
+	standard-version --sign release
+.PHONY: release ## Run standard-version to update changelog and version number
+
 build: tagesschau-dl
 .PHONY: build ## Build the project
 
