@@ -80,6 +80,13 @@ AUDIO_QUALITIES = {"mp3": "mp3", "ogg": "ogg"}
 URL_PATTERN = re.compile(r"\d*\.html")
 
 
+def compile_pattern(type, prefix, quality):
+    return re.compile(
+        r"//download\.media\.tagesschau\.de/%s/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s"
+        % (type, prefix, quality)
+    )
+
+
 def parse_args():
     parser = argparse.ArgumentParser()
 
@@ -364,16 +371,6 @@ if __name__ == "__main__":
 
     args = parse_args()
 
-    video_pattern = re.compile(
-        r"//download\.media\.tagesschau\.de/video/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s"
-        % (PV, VIDEO_QUALITIES[args.video])
-    )
-
-    audio_pattern = re.compile(
-        r"//download\.media\.tagesschau\.de/audio/\d{4}\/\d{4}/%s-\d{8}-\d{4}-\d{4}\.%s"
-        % (PA, AUDIO_QUALITIES[args.audio])
-    )
-
     print(f"Video quality:  {BLUE}{args.video}{END}")
     print(f"Audio quality:  {BLUE}{args.audio}{END}")
     print(f"Downloading to: {BLUE}{args.dir}{END}")
@@ -384,6 +381,6 @@ if __name__ == "__main__":
         args.tool,
         "http://www.tagesschau.de/xml/atom/",
         {"User-Agent": args.ua},
-        video_pattern,
-        audio_pattern,
+        compile_pattern("video", PV, VIDEO_QUALITIES[args.video]),
+        compile_pattern("audio", PA, AUDIO_QUALITIES[args.audio]),
     )
