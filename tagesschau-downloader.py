@@ -28,6 +28,57 @@ YELLOW = "\033[93m"
 RED = "\033[91m"
 END = "\033[0m"
 
+TEXT_COLORS = {
+    "   ": (END, END, END),
+    "** ": (BLUE, BLUE, BLUE),
+    "**~": (BLUE, BLUE, END),
+    "  ~": (RED, RED, RED),
+    " * ": (END, BLUE, END),
+    " *~": (END, BLUE, BLUE),
+    "*  ": (BLUE, END, END),
+    "* ~": (BLUE, END, BLUE),
+}
+
+PREFIX_TYPE = {" ": r"%2d", "*": r"*%d", "-": r"-%d"}
+
+"""
+Style of video URLs:
+    //download.media.tagesschau.de/
+            video/2018/1012/TV-20181012-2322-5601.websm.h264.mp4
+    //download.media.tagesschau.de/
+            video/2018/1012/TV-20181012-2322-5601.webm.h264.mp4
+    //download.media.tagesschau.de/
+            video/2018/1012/TV-20181012-2322-5601.webl.h264.mp4
+    //download.media.tagesschau.de/
+            video/2021/0127/TV-20210127-1858-5700.webxl.h264.mp4
+    //download.media.tagesschau.de/
+            video/2018/1012/TV-20181012-2322-5601.webxl.h264.mp4
+"""
+
+PV = "TV"
+
+VIDEO_QUALITIES = {
+    "sm": "websm.h264.mp4",
+    "m": "webm.h264.mp4",
+    "l": "webl.h264.mp4",
+    "xl": "webxl.h264.mp4",
+}
+
+PLAYLIST_TYPE = "m3u"
+
+"""
+Style of audio URLs:
+
+//media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.mp3
+//media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.ogg
+"""
+
+PA = "AU"
+
+AUDIO_QUALITIES = {"mp3": "mp3", "ogg": "ogg"}
+
+URL_PATTERN = re.compile(r"\d*\.html")
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -104,58 +155,6 @@ def parse_args():
     args.dir += "/"
 
     return args
-
-
-TEXT_COLORS = {
-    "   ": (END, END, END),
-    "** ": (BLUE, BLUE, BLUE),
-    "**~": (BLUE, BLUE, END),
-    "  ~": (RED, RED, RED),
-    " * ": (END, BLUE, END),
-    " *~": (END, BLUE, BLUE),
-    "*  ": (BLUE, END, END),
-    "* ~": (BLUE, END, BLUE),
-}
-
-PREFIX_TYPE = {" ": r"%2d", "*": r"*%d", "-": r"-%d"}
-
-"""
-Style of video URLs:
-    //download.media.tagesschau.de/
-            video/2018/1012/TV-20181012-2322-5601.websm.h264.mp4
-    //download.media.tagesschau.de/
-            video/2018/1012/TV-20181012-2322-5601.webm.h264.mp4
-    //download.media.tagesschau.de/
-            video/2018/1012/TV-20181012-2322-5601.webl.h264.mp4
-    //download.media.tagesschau.de/
-            video/2021/0127/TV-20210127-1858-5700.webxl.h264.mp4
-    //download.media.tagesschau.de/
-            video/2018/1012/TV-20181012-2322-5601.webxl.h264.mp4
-"""
-
-PV = "TV"
-
-VIDEO_QUALITIES = {
-    "sm": "websm.h264.mp4",
-    "m": "webm.h264.mp4",
-    "l": "webl.h264.mp4",
-    "xl": "webxl.h264.mp4",
-}
-
-PLAYLIST_TYPE = "m3u"
-
-"""
-Style of audio URLs:
-
-//media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.mp3
-//media.tagesschau.de/audio/2013/0526/AU-20130526-2327-3101.ogg
-"""
-
-PA = "AU"
-
-AUDIO_QUALITIES = {"mp3": "mp3", "ogg": "ogg"}
-
-URL_PATTERN = re.compile(r"\d*\.html")
 
 
 # Create a directory if it doesn't exist
