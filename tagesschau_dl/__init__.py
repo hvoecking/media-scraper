@@ -1,11 +1,5 @@
 #!/usr/bin/env python
-# -*- coding: utf-8 -*-
-#
-#  Copyright 2013 Heye Vöcking <heye.voecking at gmail.com>
-#
-#  This program is distributed under the terms of a slightly modified version
-#  of the BSD License, please see the LICENSE.md file.
-#
+# coding: utf-8
 
 import argparse
 import copy
@@ -54,6 +48,8 @@ VIDEO_QUALITIES = {
 }
 
 PLAYLIST_TYPE = "m3u"
+TAGESSCHAU_BASE = "https://www.tagesschau.de"
+FEED = f"{TAGESSCHAU_BASE}/xml/atom/"
 
 
 def compile_pattern(type, prefix, quality):
@@ -69,12 +65,12 @@ def parse_args():
     parser.add_argument(
         "-v, --video-quality",
         choices=VIDEO_QUALITIES.keys(),
-        default="l",
+        default="xl",
         dest="video",
         help=" ".join(
             [
-                f"There are {len(VIDEO_QUALITIES)} different video qualities available for",
-                f"download: {str(VIDEO_QUALITIES)}",
+                f"There are {len(VIDEO_QUALITIES)} different video qualities available",
+                f"for download: {str(VIDEO_QUALITIES)}",
             ]
         ),
     )
@@ -86,8 +82,8 @@ def parse_args():
         dest="audio",
         help=" ".join(
             [
-                f"There are {len(AUDIO_QUALITIES)} different audio qualities available for",
-                "download.",
+                f"There are {len(AUDIO_QUALITIES)} different audio qualities available",
+                "for download.",
             ]
         ),
     )
@@ -95,7 +91,7 @@ def parse_args():
     parser.add_argument(
         "-d, --download-directory",
         dest="dir",
-        default="~/Downloads",
+        default=os.path.join(os.path.expanduser("~"), "Downloads"),
         help="The directory to which the files should be downloaded.",
     )
 
@@ -172,11 +168,30 @@ def print_table_row(videos, audios, title, v_prefix=" ", a_prefix=" ", t_prefix=
     )
 
 
-def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
-    today = str(date.today())
-    mkdir(location)
+def main():
+    args = parse_args()
 
-    playlist_file = location + today + "." + PLAYLIST_TYPE
+    print(f"{BOLD}Downloader for tagesschau.de{END}")
+    print(
+        f" (c) by{BOLD} Heye Voecking {END}{BLUE}<heye.voecking[at]gmail[dot]com>{END}"
+    )
+    print()
+    print(f"{RED}This program is distributed WITHOUT ANY WARRANTY!{END}")
+    print()
+    print(f"Video quality:  {BLUE}{args.video}{END}")
+    print(f"Audio quality:  {BLUE}{args.audio}{END}")
+    print(f"Downloading to: {BLUE}{args.dir}{END}")
+    print()
+
+    args.dir += "/"
+    headers = {"User-Agent": args.ua}
+    video_pattern = compile_pattern("video", PV, VIDEO_QUALITIES[args.video])
+    audio_pattern = compile_pattern("audio", PA, AUDIO_QUALITIES[args.audio])
+
+    today = str(date.today())
+    mkdir(args.dir)
+
+    playlist_file = args.dir + today + "." + PLAYLIST_TYPE
     playlist = open(playlist_file, "w")
     playlist.write("#EXTM3U\n")
 
@@ -192,13 +207,13 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
     # Prepare the opener
     opener = urllib.request.build_opener(urllib.request.HTTPCookieProcessor(None))
 
-    soup = cook_soup(opener, feed, headers)
+    soup = cook_soup(opener, FEED, headers)
 
     urls = []
     for entry in soup.find_all("entry"):
         urls.append(entry.link["href"])
 
-    print(f"Opening {len(urls)} articles on {feed} | {today}")
+    print(f"Opening {len(urls)} articles on {FEED} | {today}")
     print()
     print(f"{BOLD}video {END}| {BOLD}audio {END}|{BOLD} Title{END}")
     print("------|-------|---------------")
@@ -209,13 +224,13 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
         if not url.endswith(".html"):
             print(f"Skipping non-html document, with url {url}")
             continue
-        if not url.startswith("https://www.tagesschau.de"):
+        if not url.startswith(TAGESSCHAU_BASE):
             print(f"Skipping non-tagesschau url {url}")
             continue
 
         name = url.split("/")[-1]
         general_topic = re.sub(URL_PATTERN, "", name)
-        dir = f"{location}{general_topic}/"
+        dir = f"{args.dir}{general_topic}/"
         mkdir(dir)
         try:
             soup = cook_soup(opener, url, headers, dir, name)
@@ -223,8 +238,8 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
             print(f"Failed to open '{url}':{err}")
             continue
 
-        videos = soup.find_all(attrs={"data-config": VIDEO_FILE_PATTERN})
-        audios = soup.find_all(attrs={"data-config": AUDIO_FILE_PATTERN})
+        videos = soup.find_all(attrs={"data-config": video_pattern})
+        audios = soup.find_all(attrs={"data-config": audio_pattern})
 
         title = soup.find("title").get_text().split(" | ")[0]
 
@@ -307,38 +322,19 @@ def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
         playlist.write(path + "\n")
         option = ""
         grep = ""
-        if tool == "curl":
+        if args.tool == "curl":
             option = "-o"
             grep = "-v Total"
-        elif tool == "wget":
+        elif args.tool == "wget":
             option = "-O"
             grep = "saved"
-        cmd.append(f"cd {dir} && {tool} {url} {option} {file} 2>&1 | grep {grep} && ")
+        cmd.append(
+            f"cd {dir} && {args.tool} {url} {option} {file} 2>&1 | grep {grep} && "
+        )
 
     playlist.close()
     os.system("".join(cmd) + "echo done")
 
 
 if __name__ == "__main__":
-    args = parse_args()
-
-    print(f"{BOLD}Downloader for tagesschau.de{END}")
-    print(
-        f" (c) by{BOLD} Heye Voecking {END}{BLUE}<heye.voecking[at]gmail[dot]com>{END}"
-    )
-    print()
-    print(f"{RED}This program is distributed WITHOUT ANY WARRANTY!{END}")
-    print()
-    print(f"Video quality:  {BLUE}{args.video}{END}")
-    print(f"Audio quality:  {BLUE}{args.audio}{END}")
-    print(f"Downloading to: {BLUE}{args.dir}{END}")
-    print()
-
-    main(
-        args.dir + "/",
-        args.tool,
-        "http://www.tagesschau.de/xml/atom/",
-        {"User-Agent": args.ua},
-        compile_pattern("video", PV, VIDEO_QUALITIES[args.video]),
-        compile_pattern("audio", PA, AUDIO_QUALITIES[args.audio]),
-    )
+    main()
