@@ -1,16 +1,14 @@
-Tagesschau Downloader
-=============
+# Tagesschau Downloader
 
 Python script for playing and downloading all media on tagesschau.de with a single click.
 
 
 I always imagined how nice it would be, if I got up and only needed a single click to enjoy my news during breakfast. And finally I came around to do it.
 
-Installation
-============
+## Installation
 
 Example for Ubuntu:
-```
+```bash
 git clone https://github.com/hvoecking/tagesschau-downloader.git
 cd tagesschau-downloader
 # install pip3 if not already present, eg. sudo apt-get install python3-pip
@@ -20,19 +18,17 @@ source venv/bin/activate
 python3 tagesschau-downloader.py [--help]
 ```
 
-Download
-========
+## Download
 
 Using the standard options the ammount downloaded per day will average at about 80MB to 90MB.
 Ranging from 20MB up to 150MB or more.
 
-License
-=======
+## License
 
 MIT
 
-TODO
-====
+## TODO
+
 - [x] Fix formatting of last row on downloading
 - [x] Do not touch files anymore
 - [x] Do not split up in subfolders by date anymore to avoid downloading same files multiple times
@@ -46,9 +42,7 @@ TODO
   - [x] Download manager
   - [x] Max age of files
 - [x] Sort playlist by general article topic > time
-- [ ] Format code
+- [x] Format code
 - [x] Consistently sort video stuff before audio stuff
-- [x] Quote style according to http://stackoverflow.com/questions/56011/single-quotes-vs-double-quotes-in-python
-- [ ] Code style according to http://google-styleguide.googlecode.com/svn/trunk/pyguide.html#Semicolons
 - [ ] Render the webpage and set it as covor image for audio files
 - [ ] Buffered cmd-line output

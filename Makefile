@@ -14,3 +14,7 @@ help:
 .PHONY: help ## Print help for all PHONY toplevel targets
 
 .DEFAULT_GOAL := help
+
+lint:
+	docker run -e RUN_LOCAL=true -v "$$PWD:/tmp/lint" github/super-linter
+.PHONY: lint ## Run GitHub's super-linter
