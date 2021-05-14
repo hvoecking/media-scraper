@@ -44,5 +44,3 @@ MIT
 - [x] Sort playlist by general article topic > time
 - [x] Format code
 - [x] Consistently sort video stuff before audio stuff
-- [ ] Render the webpage and set it as covor image for audio files
-- [ ] Buffered cmd-line output

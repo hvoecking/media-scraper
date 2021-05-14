@@ -42,8 +42,6 @@ class bcolors:
 
 
 def parse_args():
-    NYI = "\nNOT YET IMPLEMENTED"
-
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -76,46 +74,6 @@ def parse_args():
         dest="player",
         default="vlc",
         help="The media player which will be called " "to open the generated playlist.",
-    )
-
-    parser.add_argument(
-        "-f, --file-age",
-        dest="age",
-        default=0,
-        help="The maximum number of days since the "
-        "file has been published. Use 0 for "
-        "unlimited." + NYI,
-    )
-
-    parser.add_argument(
-        "--append",
-        choices=[True, False],
-        dest="append",
-        default=True,
-        help="Whether the files downloaded in this "
-        "session should be appended to the "
-        "previous playlist." + NYI,
-    )
-
-    parser.add_argument(
-        "--cache-age",
-        dest="c_age",
-        default=0,
-        help="Files with an age greater than the "
-        "specified number of days will be "
-        "deleted. The default is 0, which means "
-        "no means there is no age limit." + NYI,
-    )
-
-    parser.add_argument(
-        "--cache-size",
-        dest="c_size",
-        default=0,
-        help="The cache size specified in megabytes. "
-        "If this size is exceeded files will be "
-        "removed in chronological order. The "
-        "default is 0, which means: thee is no "
-        "size limit." + NYI,
     )
 
     parser.add_argument(
@@ -253,9 +211,7 @@ def print_table_row(videos, audios, title, v_prefix=" ", a_prefix=" ", t_prefix=
     print(string)
 
 
-def main(
-    location, age, player, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN
-):
+def main(location, tool, feed, headers, VIDEO_FILE_PATTERN, AUDIO_FILE_PATTERN):
     today = str(date.today())
     mkdir(location)
 
@@ -466,8 +422,6 @@ if __name__ == "__main__":
 
     main(
         args.dir,
-        args.age,
-        args.player,
         args.tool,
         "http://www.tagesschau.de/xml/atom/",
         {"User-Agent": args.ua},
